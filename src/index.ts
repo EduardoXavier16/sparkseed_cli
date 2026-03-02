@@ -24,7 +24,7 @@ program
   .action(async (directory: string) => {
     try {
       console.log(chalk.blue('\n🚀 Welcome to sparkseed!\n'));
-      console.log(chalk.gray('We will ask you a few questions to configure your project.\n'));
+      console.log(chalk.gray('We will first ask you which language you prefer for the interactive questions.\n'));
 
       // Ask questions
       const config = await askProjectQuestions();
@@ -70,7 +70,7 @@ program
 
       console.log(chalk.blue('\n📖 Check the documentation in docs/ for more details.\n'));
     } catch (error) {
-      console.error(chalk.red('\n❌ Erro ao criar projeto:'));
+      console.error(chalk.red('\n❌ Error while creating project:'));
       console.error(error instanceof Error ? error.message : error);
       process.exit(1);
     }
@@ -78,7 +78,7 @@ program
 
 program
   .command('init')
-  .description('Inicializar CLI interativa (atalho para create)')
+  .description('Initialize interactive CLI (shortcut for create)')
   .action(async () => {
     program.parse(['node', 'sparkseed', 'create']);
   });

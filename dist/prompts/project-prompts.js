@@ -5,16 +5,135 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.askProjectQuestions = askProjectQuestions;
 const inquirer_1 = __importDefault(require("inquirer"));
+const PROMPT_TEXTS = {
+    en: {
+        projectNameMessage: 'What is your project name?',
+        projectNameRequired: 'Project name is required',
+        projectDescriptionMessage: 'Briefly describe the project:',
+        projectDescriptionDefault: 'An awesome project',
+        projectTypeMessage: 'What type of project is it?',
+        frameworkMessage: 'Which framework do you want to use?',
+        languageMessage: 'Which language do you want to use?',
+        stylingMessage: 'Which styling approach do you prefer?',
+        cssPureLabel: '📄 Plain CSS',
+        targetAudienceMessage: 'What is the target audience of this project?',
+        targetAudienceDefault: 'General users looking for an efficient and intuitive solution',
+        mainGoalMessage: 'What is the main goal of this project?',
+        mainGoalDefault: 'Provide an exceptional user experience while solving the core problem efficiently',
+        databaseMessage: 'Which database do you want to use?',
+        noDatabaseLabel: '❌ No database',
+        authMessage: 'Do you want to include an authentication system?',
+        featuresMessage: 'Which features do you want to include?',
+        pagesMessage: 'Which pages should the application have? (separate with commas)',
+        pagesDefault: 'Home, About, Contact, Login, Dashboard',
+        componentsMessage: 'Which common components do you need? (separate with commas)',
+        componentsDefault: 'Button, Input, Card, Modal, Navbar, Sidebar, Table, Form',
+        primaryColorMessage: 'Primary color (hex or name):',
+        secondaryColorMessage: 'Secondary color (hex or name):',
+        accentColorMessage: 'Accent color (hex or name):',
+        backgroundColorMessage: 'Background color:',
+        surfaceColorMessage: 'Surface color (cards, modals):',
+        fontFamilyMessage: 'Which font family do you want to use?',
+        languageSelectMessage: 'Select the language for the interactive questions:',
+        languageOptionEnglish: 'English',
+        languageOptionPortuguese: 'Portuguese',
+        languageOptionSpanish: 'Spanish',
+    },
+    pt: {
+        projectNameMessage: 'Qual é o nome do seu projeto?',
+        projectNameRequired: 'Nome do projeto é obrigatório',
+        projectDescriptionMessage: 'Descreva brevemente o projeto:',
+        projectDescriptionDefault: 'Um projeto incrível',
+        projectTypeMessage: 'Que tipo de projeto é?',
+        frameworkMessage: 'Qual framework você quer usar?',
+        languageMessage: 'Qual linguagem você quer usar?',
+        stylingMessage: 'Qual abordagem de estilização você prefere?',
+        cssPureLabel: '📄 CSS puro',
+        targetAudienceMessage: 'Qual é o público-alvo deste projeto?',
+        targetAudienceDefault: 'Usuários em geral buscando uma solução eficiente e intuitiva',
+        mainGoalMessage: 'Qual é o principal objetivo deste projeto?',
+        mainGoalDefault: 'Proporcionar uma experiência excepcional enquanto resolve o problema principal de forma eficiente',
+        databaseMessage: 'Qual banco de dados você quer usar?',
+        noDatabaseLabel: '❌ Sem banco de dados',
+        authMessage: 'Você quer incluir um sistema de autenticação?',
+        featuresMessage: 'Quais funcionalidades você quer incluir?',
+        pagesMessage: 'Quais páginas o aplicativo deve ter? (separe com vírgulas)',
+        pagesDefault: 'Home, Sobre, Contato, Login, Dashboard',
+        componentsMessage: 'Quais componentes comuns você precisa? (separe com vírgulas)',
+        componentsDefault: 'Button, Input, Card, Modal, Navbar, Sidebar, Table, Form',
+        primaryColorMessage: 'Cor primária (hex ou nome):',
+        secondaryColorMessage: 'Cor secundária (hex ou nome):',
+        accentColorMessage: 'Cor de destaque (hex ou nome):',
+        backgroundColorMessage: 'Cor de fundo:',
+        surfaceColorMessage: 'Cor de superfície (cards, modais):',
+        fontFamilyMessage: 'Qual família de fonte você quer usar?',
+        languageSelectMessage: 'Selecione o idioma para as perguntas interativas:',
+        languageOptionEnglish: 'Inglês',
+        languageOptionPortuguese: 'Português',
+        languageOptionSpanish: 'Espanhol',
+    },
+    es: {
+        projectNameMessage: '¿Cuál es el nombre de tu proyecto?',
+        projectNameRequired: 'El nombre del proyecto es obligatorio',
+        projectDescriptionMessage: 'Describe brevemente el proyecto:',
+        projectDescriptionDefault: 'Un proyecto increíble',
+        projectTypeMessage: '¿Qué tipo de proyecto es?',
+        frameworkMessage: '¿Qué framework quieres usar?',
+        languageMessage: '¿Qué lenguaje quieres usar?',
+        stylingMessage: '¿Qué enfoque de estilos prefieres?',
+        cssPureLabel: '📄 CSS puro',
+        targetAudienceMessage: '¿Cuál es el público objetivo de este proyecto?',
+        targetAudienceDefault: 'Usuarios en general que buscan una solución eficiente e intuitiva',
+        mainGoalMessage: '¿Cuál es el objetivo principal de este proyecto?',
+        mainGoalDefault: 'Proporcionar una experiencia excepcional mientras resuelve el problema principal de forma eficiente',
+        databaseMessage: '¿Qué base de datos quieres usar?',
+        noDatabaseLabel: '❌ Sin base de datos',
+        authMessage: '¿Quieres incluir un sistema de autenticación?',
+        featuresMessage: '¿Qué funcionalidades quieres incluir?',
+        pagesMessage: '¿Qué páginas debe tener la aplicación? (separa con comas)',
+        pagesDefault: 'Home, Acerca de, Contacto, Login, Dashboard',
+        componentsMessage: '¿Qué componentes comunes necesitas? (separa con comas)',
+        componentsDefault: 'Button, Input, Card, Modal, Navbar, Sidebar, Table, Form',
+        primaryColorMessage: 'Color primario (hex o nombre):',
+        secondaryColorMessage: 'Color secundario (hex o nombre):',
+        accentColorMessage: 'Color de acento (hex o nombre):',
+        backgroundColorMessage: 'Color de fondo:',
+        surfaceColorMessage: 'Color de superficie (cards, modals):',
+        fontFamilyMessage: '¿Qué familia tipográfica quieres usar?',
+        languageSelectMessage: 'Selecciona el idioma para las preguntas interactivas:',
+        languageOptionEnglish: 'Inglés',
+        languageOptionPortuguese: 'Portugués',
+        languageOptionSpanish: 'Español',
+    },
+};
+async function askCliLanguage() {
+    const languageAnswer = await inquirer_1.default.prompt([
+        {
+            type: 'list',
+            name: 'cliLanguage',
+            message: PROMPT_TEXTS.en.languageSelectMessage,
+            choices: [
+                { name: `🇺🇸 ${PROMPT_TEXTS.en.languageOptionEnglish}`, value: 'en' },
+                { name: `🇧🇷 ${PROMPT_TEXTS.en.languageOptionPortuguese}`, value: 'pt' },
+                { name: `🇪🇸 ${PROMPT_TEXTS.en.languageOptionSpanish}`, value: 'es' },
+            ],
+            default: 'en',
+        },
+    ]);
+    return languageAnswer.cliLanguage;
+}
 async function askProjectQuestions() {
+    const cliLanguage = await askCliLanguage();
+    const texts = PROMPT_TEXTS[cliLanguage];
     const answers = await inquirer_1.default.prompt([
         {
             type: 'input',
             name: 'projectName',
-            message: 'What is your project name?',
+            message: texts.projectNameMessage,
             default: 'my-awesome-project',
             validate: (input) => {
                 if (input.trim().length === 0) {
-                    return 'Project name is required';
+                    return texts.projectNameRequired;
                 }
                 return true;
             },
@@ -22,13 +141,13 @@ async function askProjectQuestions() {
         {
             type: 'input',
             name: 'description',
-            message: 'Briefly describe the project:',
-            default: 'An awesome project',
+            message: texts.projectDescriptionMessage,
+            default: texts.projectDescriptionDefault,
         },
         {
             type: 'list',
             name: 'type',
-            message: 'What type of project is it?',
+            message: texts.projectTypeMessage,
             choices: [
                 { name: '🌐 Web Application', value: 'web' },
                 { name: '📱 Mobile Application', value: 'mobile' },
@@ -40,7 +159,7 @@ async function askProjectQuestions() {
         {
             type: 'list',
             name: 'framework',
-            message: 'Which framework do you want to use?',
+            message: texts.frameworkMessage,
             choices: (answers) => {
                 const choices = [];
                 if (['web', 'fullstack'].includes(answers.type)) {
@@ -61,7 +180,7 @@ async function askProjectQuestions() {
         {
             type: 'list',
             name: 'language',
-            message: 'Which language do you want to use?',
+            message: texts.languageMessage,
             choices: [
                 { name: 'TypeScript', value: 'typescript' },
                 { name: 'JavaScript', value: 'javascript' },
@@ -71,7 +190,7 @@ async function askProjectQuestions() {
         {
             type: 'list',
             name: 'styling',
-            message: 'Which styling approach do you prefer?',
+            message: texts.stylingMessage,
             choices: (answers) => {
                 const isReactEcosystem = ['react', 'nextjs', 'react-native'].includes(answers.framework);
                 return [
@@ -82,21 +201,21 @@ async function askProjectQuestions() {
                         { name: '🎭 Chakra UI', value: 'chakra-ui' },
                     ] : []),
                     { name: '📜 SCSS/SASS', value: 'scss' },
-                    { name: '📄 CSS Puro', value: 'css' },
+                    { name: texts.cssPureLabel, value: 'css' },
                 ];
             },
         },
         {
             type: 'input',
             name: 'targetAudience',
-            message: 'What is the target audience of this project?',
-            default: 'General users looking for an efficient and intuitive solution',
+            message: texts.targetAudienceMessage,
+            default: texts.targetAudienceDefault,
         },
         {
             type: 'input',
             name: 'mainGoal',
-            message: 'What is the main goal of this project?',
-            default: 'Provide an exceptional user experience while solving the core problem efficiently',
+            message: texts.mainGoalMessage,
+            default: texts.mainGoalDefault,
         },
     ]);
     // Database question for backend/fullstack projects
@@ -106,14 +225,14 @@ async function askProjectQuestions() {
             {
                 type: 'list',
                 name: 'database',
-                message: 'Which database do you want to use?',
+                message: texts.databaseMessage,
                 choices: [
                     { name: '🐘 PostgreSQL', value: 'postgresql' },
                     { name: '🦆 MySQL', value: 'mysql' },
                     { name: '🔷 SQLite', value: 'sqlite' },
                     { name: '🍃 MongoDB', value: 'mongodb' },
                     { name: '🔴 Redis', value: 'redis' },
-                    { name: '❌ No database', value: 'none' },
+                    { name: texts.noDatabaseLabel, value: 'none' },
                 ],
             },
         ]);
@@ -126,7 +245,7 @@ async function askProjectQuestions() {
             {
                 type: 'confirm',
                 name: 'auth',
-                message: 'Do you want to include an authentication system?',
+                message: texts.authMessage,
                 default: true,
             },
         ]);
@@ -137,7 +256,7 @@ async function askProjectQuestions() {
         {
             type: 'checkbox',
             name: 'features',
-            message: 'Which features do you want to include?',
+            message: texts.featuresMessage,
             choices: [
                 { name: '👤 User authentication', value: 'auth', checked: auth },
                 { name: '📧 Email sending', value: 'email' },
@@ -161,8 +280,8 @@ async function askProjectQuestions() {
         {
             type: 'input',
             name: 'pages',
-            message: 'Which pages should the application have? (separate with commas)',
-            default: 'Home, About, Contact, Login, Dashboard',
+            message: texts.pagesMessage,
+            default: texts.pagesDefault,
             filter: (input) => {
                 return input.split(',').map((p) => p.trim()).filter((p) => p.length > 0);
             },
@@ -173,8 +292,8 @@ async function askProjectQuestions() {
         {
             type: 'input',
             name: 'components',
-            message: 'Which common components do you need? (separate with commas)',
-            default: 'Button, Input, Card, Modal, Navbar, Sidebar, Table, Form',
+            message: texts.componentsMessage,
+            default: texts.componentsDefault,
             filter: (input) => {
                 return input.split(',').map((c) => c.trim()).filter((c) => c.length > 0);
             },
@@ -185,31 +304,31 @@ async function askProjectQuestions() {
         {
             type: 'input',
             name: 'primaryColor',
-            message: 'Primary color (hex or name):',
+            message: texts.primaryColorMessage,
             default: '#3B82F6',
         },
         {
             type: 'input',
             name: 'secondaryColor',
-            message: 'Secondary color (hex or name):',
+            message: texts.secondaryColorMessage,
             default: '#6366F1',
         },
         {
             type: 'input',
             name: 'accentColor',
-            message: 'Accent color (hex or name):',
+            message: texts.accentColorMessage,
             default: '#8B5CF6',
         },
         {
             type: 'input',
             name: 'backgroundColor',
-            message: 'Background color:',
+            message: texts.backgroundColorMessage,
             default: '#FFFFFF',
         },
         {
             type: 'input',
             name: 'surfaceColor',
-            message: 'Surface color (cards, modals):',
+            message: texts.surfaceColorMessage,
             default: '#F9FAFB',
         },
     ]);
@@ -218,7 +337,7 @@ async function askProjectQuestions() {
         {
             type: 'list',
             name: 'fontFamily',
-            message: 'Which font family do you want to use?',
+            message: texts.fontFamilyMessage,
             choices: [
                 { name: 'Inter (modern and clean)', value: 'Inter' },
                 { name: 'Roboto (versatile)', value: 'Roboto' },
@@ -290,6 +409,7 @@ async function askProjectQuestions() {
         components: componentsAnswer.components,
         colorPalette,
         typography,
+        cliLanguage,
     };
 }
 //# sourceMappingURL=project-prompts.js.map

@@ -1,1 +1,1 @@
-{"version":3,"file":"project-prompts.d.ts","sourceRoot":"","sources":["../../src/prompts/project-prompts.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,aAAa,EAA4B,MAAM,UAAU,CAAC;AAanE,wBAAsB,mBAAmB,IAAI,OAAO,CAAC,aAAa,CAAC,CAoUlE"}
+{"version":3,"file":"project-prompts.d.ts","sourceRoot":"","sources":["../../src/prompts/project-prompts.ts"],"names":[],"mappings":"AACA,OAAO,EAAgB,aAAa,EAAiC,MAAM,UAAU,CAAC;AAsKtF,wBAAsB,mBAAmB,IAAI,OAAO,CAAC,aAAa,CAAC,CAwUlE"}

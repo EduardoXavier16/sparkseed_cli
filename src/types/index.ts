@@ -1,3 +1,5 @@
+export type SupportedLanguage = 'en' | 'pt' | 'es';
+
 export interface ProjectConfig {
   projectName: string;
   description: string;
@@ -14,6 +16,7 @@ export interface ProjectConfig {
   typography: Typography;
   components: string[];
   pages: string[];
+  cliLanguage?: SupportedLanguage;
   apiEndpoints?: ApiEndpoint[];
 }
 

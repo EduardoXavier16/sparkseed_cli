@@ -58,7 +58,7 @@ program
     .action(async (directory) => {
     try {
         console.log(chalk_1.default.blue('\n🚀 Welcome to sparkseed!\n'));
-        console.log(chalk_1.default.gray('We will ask you a few questions to configure your project.\n'));
+        console.log(chalk_1.default.gray('We will first ask you which language you prefer for the interactive questions.\n'));
         // Ask questions
         const config = await (0, project_prompts_1.askProjectQuestions)();
         console.log(chalk_1.default.blue('\n⚙️  Generating documents and project structure...\n'));
@@ -96,14 +96,14 @@ program
         console.log(chalk_1.default.blue('\n📖 Check the documentation in docs/ for more details.\n'));
     }
     catch (error) {
-        console.error(chalk_1.default.red('\n❌ Erro ao criar projeto:'));
+        console.error(chalk_1.default.red('\n❌ Error while creating project:'));
         console.error(error instanceof Error ? error.message : error);
         process.exit(1);
     }
 });
 program
     .command('init')
-    .description('Inicializar CLI interativa (atalho para create)')
+    .description('Initialize interactive CLI (shortcut for create)')
     .action(async () => {
     program.parse(['node', 'sparkseed', 'create']);
 });
