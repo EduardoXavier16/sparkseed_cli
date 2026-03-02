@@ -1,5 +1,5 @@
 import inquirer from 'inquirer';
-import { ColorPalette, ProjectConfig, SupportedLanguage, Typography } from '../types';
+import { ColorPalette, GlobalStateLibrary, ProjectConfig, SupportedLanguage, Typography } from '../types';
 
 interface Answers {
   projectName: string;
@@ -40,6 +40,10 @@ interface IProjectPromptTexts {
   readonly backgroundColorMessage: string;
   readonly surfaceColorMessage: string;
   readonly fontFamilyMessage: string;
+  readonly globalStateMessage: string;
+  readonly globalStateNoneLabel: string;
+  readonly globalStateZustandLabel: string;
+  readonly globalStateReduxToolkitLabel: string;
   readonly languageSelectMessage: string;
   readonly languageOptionEnglish: string;
   readonly languageOptionPortuguese: string;
@@ -75,6 +79,10 @@ const PROMPT_TEXTS: Record<SupportedLanguage, IProjectPromptTexts> = {
     backgroundColorMessage: 'Background color:',
     surfaceColorMessage: 'Surface color (cards, modals):',
     fontFamilyMessage: 'Which font family do you want to use?',
+    globalStateMessage: 'Do you want to add a global state library?',
+    globalStateNoneLabel: '🚫 No global state library',
+    globalStateZustandLabel: '🧠 Zustand (simple, hooks-based store)',
+    globalStateReduxToolkitLabel: '🧰 Redux Toolkit (scalable state management)',
     languageSelectMessage: 'Select the language for the interactive questions:',
     languageOptionEnglish: 'English',
     languageOptionPortuguese: 'Portuguese',
@@ -108,6 +116,10 @@ const PROMPT_TEXTS: Record<SupportedLanguage, IProjectPromptTexts> = {
     backgroundColorMessage: 'Cor de fundo:',
     surfaceColorMessage: 'Cor de superfície (cards, modais):',
     fontFamilyMessage: 'Qual família de fonte você quer usar?',
+    globalStateMessage: 'Você quer adicionar uma biblioteca de estado global?',
+    globalStateNoneLabel: '🚫 Sem biblioteca de estado global',
+    globalStateZustandLabel: '🧠 Zustand (store simples baseado em hooks)',
+    globalStateReduxToolkitLabel: '🧰 Redux Toolkit (estado global escalável)',
     languageSelectMessage: 'Selecione o idioma para as perguntas interativas:',
     languageOptionEnglish: 'Inglês',
     languageOptionPortuguese: 'Português',
@@ -141,6 +153,10 @@ const PROMPT_TEXTS: Record<SupportedLanguage, IProjectPromptTexts> = {
     backgroundColorMessage: 'Color de fondo:',
     surfaceColorMessage: 'Color de superficie (cards, modals):',
     fontFamilyMessage: '¿Qué familia tipográfica quieres usar?',
+    globalStateMessage: '¿Quieres añadir una librería de estado global?',
+    globalStateNoneLabel: '🚫 Sin librería de estado global',
+    globalStateZustandLabel: '🧠 Zustand (store simple basado en hooks)',
+    globalStateReduxToolkitLabel: '🧰 Redux Toolkit (gestión de estado escalable)',
     languageSelectMessage: 'Selecciona el idioma para las preguntas interactivas:',
     languageOptionEnglish: 'Inglés',
     languageOptionPortuguese: 'Portugués',
@@ -326,6 +342,33 @@ export async function askProjectQuestions(): Promise<ProjectConfig> {
     auth = authAnswer.auth;
   }
 
+  // Global state library question (only when it makes sense)
+  let globalState: GlobalStateLibrary | 'none' | undefined;
+  const supportsGlobalState =
+    answers.language === 'typescript' &&
+    ['web', 'fullstack'].includes(answers.type) &&
+    answers.framework === 'react';
+
+  if (supportsGlobalState) {
+    const globalStateAnswer = await inquirer.prompt<{
+      globalState: GlobalStateLibrary | 'none';
+    }>([
+      {
+        type: 'list',
+        name: 'globalState',
+        message: texts.globalStateMessage,
+        choices: [
+          { name: texts.globalStateNoneLabel, value: 'none' },
+          { name: texts.globalStateZustandLabel, value: 'zustand' },
+          { name: texts.globalStateReduxToolkitLabel, value: 'redux-toolkit' },
+        ],
+        default: 'none',
+      },
+    ]);
+
+    globalState = globalStateAnswer.globalState;
+  }
+
   // Features question
   const featuresAnswer = await inquirer.prompt([
     {
@@ -486,6 +529,7 @@ export async function askProjectQuestions(): Promise<ProjectConfig> {
     mainGoal: answers.mainGoal,
     database,
     auth,
+    globalState: globalState && globalState !== 'none' ? globalState : undefined,
     features: featuresAnswer.features,
     pages: pagesAnswer.pages,
     components: componentsAnswer.components,

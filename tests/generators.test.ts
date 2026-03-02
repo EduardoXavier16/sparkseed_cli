@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest';
-import { generatePRD } from '../src/generators/prd-generator';
+import { describe, expect, it } from 'vitest';
 import { generateDesignSystem } from '../src/generators/design-system-generator';
+import { generatePRD } from '../src/generators/prd-generator';
 import { generateProjectStructure } from '../src/generators/project-structure';
+import type { ProjectConfig } from '../src/types';
 
-const mockConfig = {
+const mockConfig: ProjectConfig = {
   projectName: 'test-project',
   description: 'A test project',
   type: 'web' as const,
@@ -59,6 +60,7 @@ const mockConfig = {
       relaxed: 1.75,
     },
   },
+  cliLanguage: 'en',
 };
 
 describe('PRD Generator', () => {
@@ -144,5 +146,66 @@ describe('Project Structure Generator', () => {
     
     expect(componentsFolder).toBeDefined();
     expect(componentsFolder?.children?.length).toBe(mockConfig.components.length);
+  });
+
+  it('should include tsconfig.node.json for TypeScript frontend', () => {
+    const structure = generateProjectStructure(mockConfig);
+    const frontendChildren = structure.children?.[0]?.children;
+    const tsconfigNode = frontendChildren?.find((child) => child.name === 'tsconfig.node.json');
+
+    expect(tsconfigNode).toBeDefined();
+  });
+
+  it('should generate store and dependency for Zustand when configured', () => {
+    const zustandConfig: ProjectConfig = {
+      ...mockConfig,
+      globalState: 'zustand',
+    };
+
+    const structure = generateProjectStructure(zustandConfig);
+    const frontendChildren = structure.children?.[0]?.children;
+    const srcFolder = frontendChildren?.find((child) => child.name === 'src');
+    const storeFolder = srcFolder?.children?.find((child) => child.name === 'store');
+    const zustandStoreFile = storeFolder?.children?.find((child) => child.name === 'useAppStore.ts');
+    const packageJsonFile = frontendChildren?.find((child) => child.name === 'package.json');
+
+    expect(storeFolder).toBeDefined();
+    expect(zustandStoreFile).toBeDefined();
+    expect(packageJsonFile?.content).toBeDefined();
+
+    if (packageJsonFile?.content) {
+      const parsed = JSON.parse(packageJsonFile.content) as {
+        readonly dependencies?: Record<string, string>;
+      };
+      expect(parsed.dependencies?.zustand).toBeDefined();
+    }
+  });
+
+  it('should generate store and dependencies for Redux Toolkit when configured', () => {
+    const reduxConfig: ProjectConfig = {
+      ...mockConfig,
+      globalState: 'redux-toolkit',
+    };
+
+    const structure = generateProjectStructure(reduxConfig);
+    const frontendChildren = structure.children?.[0]?.children;
+    const srcFolder = frontendChildren?.find((child) => child.name === 'src');
+    const storeFolder = srcFolder?.children?.find((child) => child.name === 'store');
+    const reduxStoreFile = storeFolder?.children?.find((child) => child.name === 'index.ts');
+    const reduxHooksFile = storeFolder?.children?.find((child) => child.name === 'hooks.ts');
+    const packageJsonFile = frontendChildren?.find((child) => child.name === 'package.json');
+
+    expect(storeFolder).toBeDefined();
+    expect(reduxStoreFile).toBeDefined();
+    expect(reduxHooksFile).toBeDefined();
+    expect(packageJsonFile?.content).toBeDefined();
+
+    if (packageJsonFile?.content) {
+      const parsed = JSON.parse(packageJsonFile.content) as {
+        readonly dependencies?: Record<string, string>;
+      };
+      expect(parsed.dependencies?.['@reduxjs/toolkit']).toBeDefined();
+      expect(parsed.dependencies?.['react-redux']).toBeDefined();
+    }
   });
 });

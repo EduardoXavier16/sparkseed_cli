@@ -1,21 +1,49 @@
 import * as fs from 'fs';
-import * as path from 'path';
-import { ProjectStructure } from './project-structure';
 import ora from 'ora';
+import * as path from 'path';
+import type { SupportedLanguage } from '../types';
+import { ProjectStructure } from './project-structure';
+
+interface IFileWriterMessages {
+  readonly creating: string;
+  readonly success: string;
+  readonly error: string;
+}
+
+const FILE_WRITER_MESSAGES: Record<SupportedLanguage, IFileWriterMessages> = {
+  en: {
+    creating: 'Creating project structure...',
+    success: 'Project successfully created!',
+    error: 'Error while creating project',
+  },
+  pt: {
+    creating: 'Criando estrutura do projeto...',
+    success: 'Projeto criado com sucesso!',
+    error: 'Erro ao criar projeto',
+  },
+  es: {
+    creating: 'Creando estructura del proyecto...',
+    success: 'Proyecto creado con éxito!',
+    error: 'Error al crear el proyecto',
+  },
+};
 
 export async function writeProjectToDisk(
   structure: ProjectStructure,
   baseDir: string,
   prdContent?: string,
-  designSystemContent?: string
+  designSystemContent?: string,
+  language?: SupportedLanguage
 ): Promise<void> {
-  const spinner = ora('Criando estrutura do projeto...').start();
+  const selectedLanguage: SupportedLanguage = language ?? 'en';
+  const messages = FILE_WRITER_MESSAGES[selectedLanguage];
+  const spinner = ora(messages.creating).start();
 
   try {
     await writeStructure(structure, baseDir, prdContent, designSystemContent);
-    spinner.succeed('Projeto criado com sucesso!');
+    spinner.succeed(messages.success);
   } catch (error) {
-    spinner.fail('Erro ao criar projeto');
+    spinner.fail(messages.error);
     throw error;
   }
 }

@@ -1,4 +1,4 @@
-import { ProjectConfig } from '../types';
+import { ProjectConfig, SupportedLanguage } from '../types';
 
 export interface ProjectStructure {
   name: string;
@@ -8,471 +8,561 @@ export interface ProjectStructure {
 }
 
 export function generateProjectStructure(config: ProjectConfig): ProjectStructure {
-  const isReactEcosystem = ['react', 'nextjs', 'react-native'].includes(config.framework);
   const isNextJs = config.framework === 'nextjs';
   const hasBackend = ['api', 'fullstack'].includes(config.type);
   const isTypescript = config.language === 'typescript';
-
   const ext = isTypescript ? 'ts' : 'js';
   const configExt = isTypescript ? 'ts' : 'js';
 
-  const structure: ProjectStructure = {
+  const children: ProjectStructure[] = [];
+
+  const frontend = buildFrontendStructure(config, ext, configExt, isNextJs);
+  if (frontend !== null) {
+    children.push(frontend);
+  }
+
+  const backend = buildBackendStructure(config, ext);
+  if (backend !== null) {
+    children.push(backend);
+  }
+
+  const docs = buildDocsStructure(config, hasBackend);
+  children.push(docs);
+
+  const dockerCompose = buildDockerCompose(config);
+  if (dockerCompose !== null) {
+    children.push(dockerCompose);
+  }
+
+  return {
     name: config.projectName,
     type: 'folder',
-    children: [],
+    children,
+  };
+}
+
+function buildFrontendStructure(
+  config: ProjectConfig,
+  ext: string,
+  configExt: string,
+  isNextJs: boolean
+): ProjectStructure | null {
+  if (!['web', 'fullstack', 'mobile', 'desktop'].includes(config.type)) {
+    return null;
+  }
+
+  const frontendChildren: ProjectStructure[] = [
+    {
+      name: 'package.json',
+      type: 'file',
+      content: generatePackageJson(config),
+    },
+    {
+      name: 'tsconfig.json',
+      type: 'file',
+      content: generateTsConfig(config),
+    },
+    {
+      name: 'tsconfig.node.json',
+      type: 'file',
+      content: generateNodeTsConfig(config),
+    },
+    {
+      name: '.eslintrc.cjs',
+      type: 'file',
+      content: generateEslintConfig(config),
+    },
+    {
+      name: '.prettierrc',
+      type: 'file',
+      content: generatePrettierConfig(),
+    },
+    {
+      name: '.gitignore',
+      type: 'file',
+      content: generateGitignore(config),
+    },
+    {
+      name: 'README.md',
+      type: 'file',
+      content: generateReadme(config),
+    },
+    {
+      name: '.env.example',
+      type: 'file',
+      content: generateEnvExample(config),
+    },
+  ];
+
+  const srcFolder: ProjectStructure = {
+    name: 'src',
+    type: 'folder',
+    children: [
+      {
+        name: 'main.' + ext,
+        type: 'file',
+        content: generateMainFile(config),
+      },
+      {
+        name: 'vite-env.d.ts',
+        type: 'file',
+        content: '/// <reference types="vite/client" />\n',
+      },
+    ],
   };
 
-  // Frontend structure
-  if (['web', 'fullstack', 'mobile', 'desktop'].includes(config.type)) {
-    const frontendChildren: ProjectStructure[] = [
-      {
-        name: 'package.json',
-        type: 'file',
-        content: generatePackageJson(config),
-      },
-      {
-        name: 'tsconfig.json',
-        type: 'file',
-        content: generateTsConfig(config),
-      },
-      {
-        name: '.eslintrc.cjs',
-        type: 'file',
-        content: generateEslintConfig(config),
-      },
-      {
-        name: '.prettierrc',
-        type: 'file',
-        content: generatePrettierConfig(),
-      },
-      {
-        name: '.gitignore',
-        type: 'file',
-        content: generateGitignore(config),
-      },
-      {
-        name: 'README.md',
-        type: 'file',
-        content: generateReadme(config),
-      },
-      {
-        name: '.env.example',
-        type: 'file',
-        content: generateEnvExample(config),
-      },
-    ];
-
-    const srcFolder: ProjectStructure = {
-      name: 'src',
+  const componentsFolder: ProjectStructure = {
+    name: 'components',
+    type: 'folder',
+    children: config.components.map((component) => ({
+      name: component,
       type: 'folder',
       children: [
         {
-          name: 'main.' + ext,
+          name: component + '.' + ext + 'x',
           type: 'file',
-          content: generateMainFile(config),
+          content: generateComponentTemplate(component, config),
         },
         {
-          name: 'vite-env.d.ts',
+          name: component + '.styles.' + (config.styling === 'tailwind' ? 'ts' : config.styling === 'scss' ? 'scss' : configExt),
           type: 'file',
-          content: '/// <reference types="vite/client" />\n',
+          content: generateComponentStyles(component, config),
+        },
+        {
+          name: component + '.test.' + ext + 'x',
+          type: 'file',
+          content: generateComponentTest(component, config),
         },
       ],
-    };
+    })),
+  };
 
-    const componentsFolder: ProjectStructure = {
-      name: 'components',
+  const pagesFolder: ProjectStructure = {
+    name: 'pages',
+    type: 'folder',
+    children: config.pages.map((page) => ({
+      name: page,
       type: 'folder',
-      children: config.components.map((component) => ({
-        name: component,
+      children: [
+        {
+          name: 'index.' + ext + 'x',
+          type: 'file',
+          content: generatePageTemplate(page, config),
+        },
+      ],
+    })),
+  };
+
+  const hooksFolder: ProjectStructure = {
+    name: 'hooks',
+    type: 'folder',
+    children: [
+      {
+        name: 'useAuth.' + ext,
+        type: 'file',
+        content: generateUseAuthHook(config),
+      },
+      {
+        name: 'useTheme.' + ext,
+        type: 'file',
+        content: generateUseThemeHook(config),
+      },
+    ],
+  };
+
+  const contextFolder: ProjectStructure = {
+    name: 'context',
+    type: 'folder',
+    children: [
+      {
+        name: 'AuthContext.' + ext + 'x',
+        type: 'file',
+        content: generateAuthContext(config),
+      },
+      {
+        name: 'ThemeContext.' + ext + 'x',
+        type: 'file',
+        content: generateThemeContext(config),
+      },
+    ],
+  };
+
+  const servicesFolder: ProjectStructure = {
+    name: 'services',
+    type: 'folder',
+    children: [
+      {
+        name: 'api.' + ext,
+        type: 'file',
+        content: generateApiService(config),
+      },
+      {
+        name: 'auth.' + ext,
+        type: 'file',
+        content: generateAuthService(config),
+      },
+    ],
+  };
+
+  const stylesFolder: ProjectStructure = {
+    name: 'styles',
+    type: 'folder',
+    children: [
+      {
+        name: 'globals.css',
+        type: 'file',
+        content: generateGlobalStyles(config),
+      },
+      {
+        name: 'variables.css',
+        type: 'file',
+        content: generateCssVariables(config),
+      },
+    ],
+  };
+
+  const typesFolder: ProjectStructure = {
+    name: 'types',
+    type: 'folder',
+    children: [
+      {
+        name: 'index.' + ext,
+        type: 'file',
+        content: generateTypesIndex(config),
+      },
+    ],
+  };
+
+  const utilsFolder: ProjectStructure = {
+    name: 'utils',
+    type: 'folder',
+    children: [
+      {
+        name: 'cn.' + ext,
+        type: 'file',
+        content: "import { clsx, type ClassValue } from 'clsx';\nimport { twMerge } from 'tailwind-merge';\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs));\n}\n",
+      },
+      {
+        name: 'format.' + ext,
+        type: 'file',
+        content: "export function formatDate(date: Date): string {\n  return new Intl.DateTimeFormat('pt-BR').format(date);\n}\n\nexport function formatCurrency(value: number, currency: string = 'BRL'): string {\n  return new Intl.NumberFormat('pt-BR', {\n    style: 'currency',\n    currency,\n  }).format(value);\n}\n",
+      },
+    ],
+  };
+
+  const assetsFolder: ProjectStructure = {
+    name: 'assets',
+    type: 'folder',
+    children: [
+      {
+        name: 'images',
         type: 'folder',
-        children: [
-          {
-            name: component + '.' + ext + 'x',
-            type: 'file',
-            content: generateComponentTemplate(component, config),
-          },
-          {
-            name: component + '.styles.' + (config.styling === 'tailwind' ? 'ts' : config.styling === 'scss' ? 'scss' : configExt),
-            type: 'file',
-            content: generateComponentStyles(component, config),
-          },
-          {
-            name: component + '.test.' + ext + 'x',
-            type: 'file',
-            content: generateComponentTest(component, config),
-          },
-        ],
-      })),
-    };
-
-    const pagesFolder: ProjectStructure = {
-      name: 'pages',
-      type: 'folder',
-      children: config.pages.map((page) => ({
-        name: page,
+        children: [{ name: '.gitkeep', type: 'file' as const }],
+      },
+      {
+        name: 'icons',
         type: 'folder',
-        children: [
-          {
-            name: 'index.' + ext + 'x',
-            type: 'file',
-            content: generatePageTemplate(page, config),
-          },
-        ],
-      })),
-    };
-
-    const hooksFolder: ProjectStructure = {
-      name: 'hooks',
-      type: 'folder',
-      children: [
-        {
-          name: 'useAuth.' + ext,
-          type: 'file',
-          content: generateUseAuthHook(config),
-        },
-        {
-          name: 'useTheme.' + ext,
-          type: 'file',
-          content: generateUseThemeHook(config),
-        },
-      ],
-    };
-
-    const contextFolder: ProjectStructure = {
-      name: 'context',
-      type: 'folder',
-      children: [
-        {
-          name: 'AuthContext.' + ext + 'x',
-          type: 'file',
-          content: generateAuthContext(config),
-        },
-        {
-          name: 'ThemeContext.' + ext + 'x',
-          type: 'file',
-          content: generateThemeContext(config),
-        },
-      ],
-    };
-
-    const servicesFolder: ProjectStructure = {
-      name: 'services',
-      type: 'folder',
-      children: [
-        {
-          name: 'api.' + ext,
-          type: 'file',
-          content: generateApiService(config),
-        },
-        {
-          name: 'auth.' + ext,
-          type: 'file',
-          content: generateAuthService(config),
-        },
-      ],
-    };
-
-    const stylesFolder: ProjectStructure = {
-      name: 'styles',
-      type: 'folder',
-      children: [
-        {
-          name: 'globals.css',
-          type: 'file',
-          content: generateGlobalStyles(config),
-        },
-        {
-          name: 'variables.css',
-          type: 'file',
-          content: generateCssVariables(config),
-        },
-      ],
-    };
-
-    const typesFolder: ProjectStructure = {
-      name: 'types',
-      type: 'folder',
-      children: [
-        {
-          name: 'index.' + ext,
-          type: 'file',
-          content: generateTypesIndex(config),
-        },
-      ],
-    };
-
-    const utilsFolder: ProjectStructure = {
-      name: 'utils',
-      type: 'folder',
-      children: [
-        {
-          name: 'cn.' + ext,
-          type: 'file',
-          content: "import { clsx, type ClassValue } from 'clsx';\nimport { twMerge } from 'tailwind-merge';\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs));\n}\n",
-        },
-        {
-          name: 'format.' + ext,
-          type: 'file',
-          content: "export function formatDate(date: Date): string {\n  return new Intl.DateTimeFormat('pt-BR').format(date);\n}\n\nexport function formatCurrency(value: number, currency: string = 'BRL'): string {\n  return new Intl.NumberFormat('pt-BR', {\n    style: 'currency',\n    currency,\n  }).format(value);\n}\n",
-        },
-      ],
-    };
-
-    const assetsFolder: ProjectStructure = {
-      name: 'assets',
-      type: 'folder',
-      children: [
-        {
-          name: 'images',
-          type: 'folder',
-          children: [{ name: '.gitkeep', type: 'file' as const }],
-        },
-        {
-          name: 'icons',
-          type: 'folder',
-          children: [{ name: '.gitkeep', type: 'file' as const }],
-        },
-        {
-          name: 'fonts',
-          type: 'folder',
-          children: [{ name: '.gitkeep', type: 'file' as const }],
-        },
-      ],
-    };
-
-    srcFolder.children!.push(
-      componentsFolder,
-      pagesFolder,
-      hooksFolder,
-      contextFolder,
-      servicesFolder,
-      stylesFolder,
-      typesFolder,
-      utilsFolder,
-      assetsFolder
-    );
-
-    frontendChildren.push(srcFolder);
-
-    if (!isNextJs) {
-      frontendChildren.push({
-        name: 'public',
+        children: [{ name: '.gitkeep', type: 'file' as const }],
+      },
+      {
+        name: 'fonts',
         type: 'folder',
-        children: [
-          { name: 'favicon.ico', type: 'file' },
-          { name: 'robots.txt', type: 'file', content: 'User-agent: *\nAllow: /\n' },
-        ],
-      });
-    }
+        children: [{ name: '.gitkeep', type: 'file' as const }],
+      },
+    ],
+  };
 
-    if (!isNextJs) {
-      frontendChildren.push({
-        name: 'index.html',
-        type: 'file',
-        content: generateIndexHtml(config),
-      });
-    }
+  const storeFolder = buildStoreFolder(config, ext);
 
-    if (!isNextJs) {
-      frontendChildren.push({
-        name: 'vite.config.' + configExt + 't',
-        type: 'file',
-        content: generateViteConfig(config),
-      });
-    }
+  srcFolder.children!.push(
+    componentsFolder,
+    pagesFolder,
+    hooksFolder,
+    contextFolder,
+    servicesFolder,
+    stylesFolder,
+    typesFolder,
+    utilsFolder,
+    assetsFolder
+  );
 
-    structure.children!.push({
-      name: 'frontend',
+  if (storeFolder !== null) {
+    srcFolder.children!.push(storeFolder);
+  }
+
+  frontendChildren.push(srcFolder);
+
+  if (!isNextJs) {
+    frontendChildren.push({
+      name: 'public',
       type: 'folder',
-      children: frontendChildren,
+      children: [
+        { name: 'favicon.ico', type: 'file' },
+        { name: 'robots.txt', type: 'file', content: 'User-agent: *\nAllow: /\n' },
+      ],
     });
   }
 
-  // Backend structure
-  if (hasBackend) {
-    const backendChildren: ProjectStructure[] = [
-      {
-        name: 'package.json',
-        type: 'file',
-        content: generateBackendPackageJson(config),
-      },
-      {
-        name: 'tsconfig.json',
-        type: 'file',
-        content: generateBackendTsConfig(config),
-      },
-      {
-        name: '.env.example',
-        type: 'file',
-        content: generateBackendEnvExample(config),
-      },
-      {
-        name: '.gitignore',
-        type: 'file',
-        content: generateBackendGitignore(),
-      },
-    ];
+  if (!isNextJs) {
+    frontendChildren.push({
+      name: 'index.html',
+      type: 'file',
+      content: generateIndexHtml(config),
+    });
+  }
 
-    const srcFolder: ProjectStructure = {
-      name: 'src',
-      type: 'folder',
-      children: [
-        {
-          name: 'index.' + ext,
-          type: 'file',
-          content: "import app from './app';\nimport { logger } from './utils/logger';\n\nconst PORT = process.env.PORT || 3000;\n\napp.listen(PORT, () => {\n  logger.info(`Server running on port ${PORT}`);\n  logger.info(`Environment: ${process.env.NODE_ENV}`);\n});\n",
-        },
-        {
-          name: 'app.' + ext,
-          type: 'file',
-          content: "import express from 'express';\nimport cors from 'cors';\nimport { routes } from './routes';\nimport { errorMiddleware } from './middlewares/error.middleware';\nimport { logger } from './utils/logger';\n\nconst app = express();\n\napp.use(cors());\napp.use(express.json());\napp.use(express.urlencoded({ extended: true }));\n\napp.use((req, res, next) => {\n  logger.info(`${req.method} ${req.path}`);\n  next();\n});\n\napp.use('/api', routes);\n\napp.get('/health', (req, res) => {\n  res.json({ status: 'ok', timestamp: new Date().toISOString() });\n});\n\napp.use(errorMiddleware);\n\nexport default app;\n",
-        },
-        {
-          name: 'config.' + ext,
-          type: 'file',
-          content: "import dotenv from 'dotenv';\n\ndotenv.config();\n\nexport const config = {\n  port: process.env.PORT || 3000,\n  nodeEnv: process.env.NODE_ENV || 'development',\n  jwt: {\n    secret: process.env.JWT_SECRET || 'default-secret',\n    expiresIn: process.env.JWT_EXPIRES_IN || '7d',\n  },\n  database: {\n    url: process.env.DATABASE_URL || '',\n  },\n};\n",
-        },
-        {
-          name: 'routes',
-          type: 'folder',
-          children: [
-            {
-              name: 'index.' + ext,
-              type: 'file',
-              content: "export { authRoutes } from './auth.routes';\nexport { userRoutes } from './user.routes';\n",
-            },
-            {
-              name: 'auth.routes.' + ext,
-              type: 'file',
-              content: "import { Router } from 'express';\nimport { authController } from '../controllers/auth.controller';\n\nexport const authRoutes = Router();\n\nauthRoutes.post('/register', authController.register);\nauthRoutes.post('/login', authController.login);\nauthRoutes.post('/logout', authController.logout);\nauthRoutes.get('/me', authController.getCurrentUser);\n",
-            },
-            {
-              name: 'user.routes.' + ext,
-              type: 'file',
-              content: "import { Router } from 'express';\nimport { userController } from '../controllers/user.controller';\nimport { authMiddleware } from '../middlewares/auth.middleware';\n\nexport const userRoutes = Router();\nuserRoutes.use(authMiddleware);\n\nuserRoutes.get('/profile', userController.getProfile);\nuserRoutes.put('/profile', userController.updateProfile);\n",
-            },
-          ],
-        },
-        {
-          name: 'controllers',
-          type: 'folder',
-          children: [
-            {
-              name: 'auth.controller.' + ext,
-              type: 'file',
-              content: "import { Request, Response, NextFunction } from 'express';\nimport { authService } from '../services/auth.service';\n\nexport const authController = {\n  async register(req: Request, res: Response, next: NextFunction) {\n    try {\n      const { name, email, password } = req.body;\n      const result = await authService.register(name, email, password);\n      res.status(201).json(result);\n    } catch (error) {\n      next(error);\n    }\n  },\n\n  async login(req: Request, res: Response, next: NextFunction) {\n    try {\n      const { email, password } = req.body;\n      const result = await authService.login(email, password);\n      res.json(result);\n    } catch (error) {\n      next(error);\n    }\n  },\n\n  async logout(req: Request, res: Response, next: NextFunction) {\n    try {\n      await authService.logout(req.headers.authorization?.split(' ')[1] || '');\n      res.json({ message: 'Logged out successfully' });\n    } catch (error) {\n      next(error);\n    }\n  },\n\n  async getCurrentUser(req: Request, res: Response, next: NextFunction) {\n    try {\n      const userId = (req as any).user.userId;\n      const user = await authService.getUserById(userId);\n      res.json(user);\n    } catch (error) {\n      next(error);\n    }\n  },\n};\n",
-            },
-            {
-              name: 'user.controller.' + ext,
-              type: 'file',
-              content: "import { Request, Response, NextFunction } from 'express';\nimport { userService } from '../services/user.service';\n\nexport const userController = {\n  async getProfile(req: Request, res: Response, next: NextFunction) {\n    try {\n      const userId = (req as any).user.userId;\n      const user = await userService.getUserById(userId);\n      res.json(user);\n    } catch (error) {\n      next(error);\n    }\n  },\n\n  async updateProfile(req: Request, res: Response, next: NextFunction) {\n    try {\n      const userId = (req as any).user.userId;\n      const updates = req.body;\n      const user = await userService.updateUser(userId, updates);\n      res.json(user);\n    } catch (error) {\n      next(error);\n    }\n  },\n};\n",
-            },
-          ],
-        },
-        {
-          name: 'services',
-          type: 'folder',
-          children: [
-            {
-              name: 'auth.service.' + ext,
-              type: 'file',
-              content: generateAuthServiceBackend(config),
-            },
-            {
-              name: 'user.service.' + ext,
-              type: 'file',
-              content: "import { prisma } from '../database';\n\nexport const userService = {\n  async getUserById(id: string) {\n    return prisma.user.findUnique({\n      where: { id },\n      select: { id: true, email: true, name: true, createdAt: true },\n    });\n  },\n\n  async updateUser(id: string, updates: { name?: string; email?: string }) {\n    return prisma.user.update({\n      where: { id },\n      data: updates,\n      select: { id: true, email: true, name: true, updatedAt: true },\n    });\n  },\n};\n",
-            },
-          ],
-        },
-        {
-          name: 'middlewares',
-          type: 'folder',
-          children: [
-            {
-              name: 'auth.middleware.' + ext,
-              type: 'file',
-              content: "import { Request, Response, NextFunction } from 'express';\nimport jwt from 'jsonwebtoken';\nimport { config } from '../config';\n\nexport interface AuthRequest extends Request {\n  user?: { userId: string; email: string };\n}\n\nexport const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {\n  const authHeader = req.headers.authorization;\n  \n  if (!authHeader || !authHeader.startsWith('Bearer ')) {\n    res.status(401).json({ message: 'Authorization token required' });\n    return;\n  }\n\n  const token = authHeader.split(' ')[1];\n\n  try {\n    const decoded = jwt.verify(token, config.jwt.secret) as { userId: string; email: string };\n    req.user = decoded;\n    next();\n  } catch (error) {\n    res.status(401).json({ message: 'Invalid or expired token' });\n  }\n};\n",
-            },
-            {
-              name: 'error.middleware.' + ext,
-              type: 'file',
-              content: "import { Request, Response, NextFunction } from 'express';\nimport { logger } from './logger';\n\nexport const errorMiddleware = (\n  error: Error,\n  req: Request,\n  res: Response,\n  next: NextFunction\n) => {\n  logger.error(`Error: ${error.message}`, { stack: error.stack });\n\n  const statusCode = (error as any).statusCode || 500;\n\n  res.status(statusCode).json({\n    error: {\n      message: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message,\n      statusCode,\n    },\n  });\n};\n",
-            },
-          ],
-        },
-        {
-          name: 'utils',
-          type: 'folder',
-          children: [
-            {
-              name: 'logger.' + ext,
-              type: 'file',
-              content: "import winston from 'winston';\n\nexport const logger = winston.createLogger({\n  level: process.env.LOG_LEVEL || 'info',\n  format: winston.format.combine(\n    winston.format.timestamp(),\n    winston.format.json()\n  ),\n  transports: [\n    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),\n    new winston.transports.File({ filename: 'logs/combined.log' }),\n  ],\n});\n\nif (process.env.NODE_ENV !== 'production') {\n  logger.add(new winston.transports.Console({\n    format: winston.format.simple(),\n  }));\n}\n",
-            },
-            {
-              name: 'httpError.' + ext,
-              type: 'file',
-              content: "export class HttpError extends Error {\n  constructor(\n    public statusCode: number,\n    message: string\n  ) {\n    super(message);\n    this.name = 'HttpError';\n  }\n}\n",
-            },
-          ],
-        },
-      ],
-    };
+  if (!isNextJs) {
+    frontendChildren.push({
+      name: 'vite.config.' + configExt + 't',
+      type: 'file',
+      content: generateViteConfig(config),
+    });
+  }
 
-    if (config.database) {
-      srcFolder.children!.push({
-        name: 'database',
+  return {
+    name: 'frontend',
+    type: 'folder',
+    children: frontendChildren,
+  };
+}
+
+function buildStoreFolder(
+  config: ProjectConfig,
+  ext: string
+): ProjectStructure | null {
+  if (config.language !== 'typescript') {
+    return null;
+  }
+
+  if (!config.globalState) {
+    return null;
+  }
+
+  const children: ProjectStructure[] = [];
+
+  if (config.globalState === 'zustand') {
+    children.push({
+      name: `useAppStore.${ext}`,
+      type: 'file',
+      content: generateZustandStore(config),
+    });
+  }
+
+  if (config.globalState === 'redux-toolkit') {
+    children.push(
+      {
+        name: `index.${ext}`,
+        type: 'file',
+        content: generateReduxStore(config),
+      },
+      {
+        name: `hooks.${ext}`,
+        type: 'file',
+        content: generateReduxHooks(config),
+      }
+    );
+  }
+
+  if (children.length === 0) {
+    return null;
+  }
+
+  return {
+    name: 'store',
+    type: 'folder',
+    children,
+  };
+}
+
+function buildBackendStructure(config: ProjectConfig, ext: string): ProjectStructure | null {
+  const hasBackend = ['api', 'fullstack'].includes(config.type);
+  if (!hasBackend) {
+    return null;
+  }
+
+  const backendChildren: ProjectStructure[] = [
+    {
+      name: 'package.json',
+      type: 'file',
+      content: generateBackendPackageJson(config),
+    },
+    {
+      name: 'tsconfig.json',
+      type: 'file',
+      content: generateBackendTsConfig(config),
+    },
+    {
+      name: '.env.example',
+      type: 'file',
+      content: generateBackendEnvExample(config),
+    },
+    {
+      name: '.gitignore',
+      type: 'file',
+      content: generateBackendGitignore(),
+    },
+  ];
+
+  const srcFolder: ProjectStructure = {
+    name: 'src',
+    type: 'folder',
+    children: [
+      {
+        name: 'index.' + ext,
+        type: 'file',
+        content: "import app from './app';\nimport { logger } from './utils/logger';\n\nconst PORT = process.env.PORT || 3000;\n\napp.listen(PORT, () => {\n  logger.info(`Server running on port ${PORT}`);\n  logger.info(`Environment: ${process.env.NODE_ENV}`);\n});\n",
+      },
+      {
+        name: 'app.' + ext,
+        type: 'file',
+        content: "import express from 'express';\nimport cors from 'cors';\nimport { routes } from './routes';\nimport { errorMiddleware } from './middlewares/error.middleware';\nimport { logger } from './utils/logger';\n\nconst app = express();\n\napp.use(cors());\napp.use(express.json());\napp.use(express.urlencoded({ extended: true }));\n\napp.use((req, res, next) => {\n  logger.info(`${req.method} ${req.path}`);\n  next();\n});\n\napp.use('/api', routes);\n\napp.get('/health', (req, res) => {\n  res.json({ status: 'ok', timestamp: new Date().toISOString() });\n});\n\napp.use(errorMiddleware);\n\nexport default app;\n",
+      },
+      {
+        name: 'config.' + ext,
+        type: 'file',
+        content: "import dotenv from 'dotenv';\n\ndotenv.config();\n\nexport const config = {\n  port: process.env.PORT || 3000,\n  nodeEnv: process.env.NODE_ENV || 'development',\n  jwt: {\n    secret: process.env.JWT_SECRET || 'default-secret',\n    expiresIn: process.env.JWT_EXPIRES_IN || '7d',\n  },\n  database: {\n    url: process.env.DATABASE_URL || '',\n  },\n};\n",
+      },
+      {
+        name: 'routes',
         type: 'folder',
         children: [
-          {
-            name: 'schema.prisma',
-            type: 'file',
-            content: `generator client {\n  provider = "prisma-client-js"\n}\n\ndatasource db {\n  provider = "${config.database === 'postgresql' ? 'postgresql' : config.database === 'mysql' ? 'mysql' : 'sqlite'}"\n  url      = env("DATABASE_URL")\n}\n\nmodel User {\n  id        String   @id @default(uuid())\n  email     String   @unique\n  password  String\n  name      String\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n  \n  @@map("users")\n}\n`,
-          },
           {
             name: 'index.' + ext,
             type: 'file',
-            content: "import { PrismaClient } from '@prisma/client';\n\nexport const prisma = new PrismaClient();\n",
+            content: "export { authRoutes } from './auth.routes';\nexport { userRoutes } from './user.routes';\n",
+          },
+          {
+            name: 'auth.routes.' + ext,
+            type: 'file',
+            content: "import { Router } from 'express';\nimport { authController } from '../controllers/auth.controller';\n\nexport const authRoutes = Router();\n\nauthRoutes.post('/register', authController.register);\nauthRoutes.post('/login', authController.login);\nauthRoutes.post('/logout', authController.logout);\nauthRoutes.get('/me', authController.getCurrentUser);\n",
+          },
+          {
+            name: 'user.routes.' + ext,
+            type: 'file',
+            content: "import { Router } from 'express';\nimport { userController } from '../controllers/user.controller';\nimport { authMiddleware } from '../middlewares/auth.middleware';\n\nexport const userRoutes = Router();\nuserRoutes.use(authMiddleware);\n\nuserRoutes.get('/profile', userController.getProfile);\nuserRoutes.put('/profile', userController.updateProfile);\n",
           },
         ],
-      });
-    }
+      },
+      {
+        name: 'controllers',
+        type: 'folder',
+        children: [
+          {
+            name: 'auth.controller.' + ext,
+            type: 'file',
+            content: "import type { AuthRequest } from '../middlewares/auth.middleware';\nimport { Response, NextFunction } from 'express';\nimport { authService } from '../services/auth.service';\n\nexport const authController = {\n  async register(req: AuthRequest, res: Response, next: NextFunction) {\n    try {\n      const { name, email, password } = req.body;\n      const result = await authService.register(name, email, password);\n      res.status(201).json(result);\n    } catch (error) {\n      next(error);\n    }\n  },\n\n  async login(req: AuthRequest, res: Response, next: NextFunction) {\n    try {\n      const { email, password } = req.body;\n      const result = await authService.login(email, password);\n      res.json(result);\n    } catch (error) {\n      next(error);\n    }\n  },\n\n  async logout(req: AuthRequest, res: Response, next: NextFunction) {\n    try {\n      await authService.logout(req.headers.authorization?.split(' ')[1] || '');\n      res.json({ message: 'Logged out successfully' });\n    } catch (error) {\n      next(error);\n    }\n  },\n\n  async getCurrentUser(req: AuthRequest, res: Response, next: NextFunction) {\n    try {\n      const userId = req.user?.userId;\n      if (!userId) {\n        res.status(401).json({ message: 'Unauthorized' });\n        return;\n      }\n      const user = await authService.getUserById(userId);\n      res.json(user);\n    } catch (error) {\n      next(error);\n    }\n  },\n};\n",
+          },
+          {
+            name: 'user.controller.' + ext,
+            type: 'file',
+            content: "import type { AuthRequest } from '../middlewares/auth.middleware';\nimport { Response, NextFunction } from 'express';\nimport { userService } from '../services/user.service';\n\nexport const userController = {\n  async getProfile(req: AuthRequest, res: Response, next: NextFunction) {\n    try {\n      const userId = req.user?.userId;\n      if (!userId) {\n        res.status(401).json({ message: 'Unauthorized' });\n        return;\n      }\n      const user = await userService.getUserById(userId);\n      res.json(user);\n    } catch (error) {\n      next(error);\n    }\n  },\n\n  async updateProfile(req: AuthRequest, res: Response, next: NextFunction) {\n    try {\n      const userId = req.user?.userId;\n      if (!userId) {\n        res.status(401).json({ message: 'Unauthorized' });\n        return;\n      }\n      const updates = req.body;\n      const user = await userService.updateUser(userId, updates);\n      res.json(user);\n    } catch (error) {\n      next(error);\n    }\n  },\n};\n",
+          },
+        ],
+      },
+      {
+        name: 'services',
+        type: 'folder',
+        children: [
+          {
+            name: 'auth.service.' + ext,
+            type: 'file',
+            content: generateAuthServiceBackend(config),
+          },
+          {
+            name: 'user.service.' + ext,
+            type: 'file',
+            content: "import { prisma } from '../database';\n\nexport const userService = {\n  async getUserById(id: string) {\n    return prisma.user.findUnique({\n      where: { id },\n      select: { id: true, email: true, name: true, createdAt: true },\n    });\n  },\n\n  async updateUser(id: string, updates: { name?: string; email?: string }) {\n    return prisma.user.update({\n      where: { id },\n      data: updates,\n      select: { id: true, email: true, name: true, updatedAt: true },\n    });\n  },\n};\n",
+          },
+        ],
+      },
+      {
+        name: 'middlewares',
+        type: 'folder',
+        children: [
+          {
+            name: 'auth.middleware.' + ext,
+            type: 'file',
+            content: "import { Request, Response, NextFunction } from 'express';\nimport jwt from 'jsonwebtoken';\nimport { config } from '../config';\n\nexport interface AuthRequest extends Request {\n  user?: { userId: string; email: string };\n}\n\nexport const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {\n  const authHeader = req.headers.authorization;\n  \n  if (!authHeader || !authHeader.startsWith('Bearer ')) {\n    res.status(401).json({ message: 'Authorization token required' });\n    return;\n  }\n\n  const token = authHeader.split(' ')[1];\n\n  try {\n    const decoded = jwt.verify(token, config.jwt.secret) as { userId: string; email: string };\n    req.user = decoded;\n    next();\n  } catch (error) {\n    res.status(401).json({ message: 'Invalid or expired token' });\n  }\n};\n",
+          },
+          {
+            name: 'error.middleware.' + ext,
+            type: 'file',
+            content: "import { Request, Response, NextFunction } from 'express';\nimport { logger } from './logger';\nimport { HttpError } from './httpError';\n\nexport const errorMiddleware = (\n  error: Error,\n  req: Request,\n  res: Response,\n  next: NextFunction\n) => {\n  logger.error(`Error: ${error.message}`, { stack: error.stack });\n\n  const statusCode = error instanceof HttpError ? error.statusCode : 500;\n\n  res.status(statusCode).json({\n    error: {\n      message: process.env.NODE_ENV === 'production' ? 'Internal server error' : error.message,\n      statusCode,\n    },\n  });\n};\n",
+          },
+        ],
+      },
+      {
+        name: 'utils',
+        type: 'folder',
+        children: [
+          {
+            name: 'logger.' + ext,
+            type: 'file',
+            content: "import winston from 'winston';\n\nexport const logger = winston.createLogger({\n  level: process.env.LOG_LEVEL || 'info',\n  format: winston.format.combine(\n    winston.format.timestamp(),\n    winston.format.json()\n  ),\n  transports: [\n    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),\n    new winston.transports.File({ filename: 'logs/combined.log' }),\n  ],\n});\n\nif (process.env.NODE_ENV !== 'production') {\n  logger.add(new winston.transports.Console({\n    format: winston.format.simple(),\n  }));\n}\n",
+          },
+          {
+            name: 'httpError.' + ext,
+            type: 'file',
+            content: "export class HttpError extends Error {\n  constructor(\n    public statusCode: number,\n    message: string\n  ) {\n    super(message);\n    this.name = 'HttpError';\n  }\n}\n",
+          },
+        ],
+      },
+    ],
+  };
 
-    backendChildren.push(srcFolder);
-
-    backendChildren.push({
-      name: 'tests',
+  if (config.database) {
+    srcFolder.children!.push({
+      name: 'database',
       type: 'folder',
       children: [
         {
-          name: 'unit',
-          type: 'folder',
-          children: [{ name: '.gitkeep', type: 'file' as const }],
+          name: 'schema.prisma',
+          type: 'file',
+          content: `generator client {\n  provider = "prisma-client-js"\n}\n\ndatasource db {\n  provider = "${config.database === 'postgresql' ? 'postgresql' : config.database === 'mysql' ? 'mysql' : 'sqlite'}"\n  url      = env("DATABASE_URL")\n}\n\nmodel User {\n  id        String   @id @default(uuid())\n  email     String   @unique\n  password  String\n  name      String\n  createdAt DateTime @default(now())\n  updatedAt DateTime @updatedAt\n  \n  @@map("users")\n}\n`,
         },
         {
-          name: 'integration',
-          type: 'folder',
-          children: [{ name: '.gitkeep', type: 'file' as const }],
+          name: 'index.' + ext,
+          type: 'file',
+          content: "import { PrismaClient } from '@prisma/client';\n\nexport const prisma = new PrismaClient();\n",
         },
       ],
     });
-
-    backendChildren.push({
-      name: 'logs',
-      type: 'folder',
-      children: [{ name: '.gitkeep', type: 'file' as const }],
-    });
-
-    structure.children!.push({
-      name: 'backend',
-      type: 'folder',
-      children: backendChildren,
-    });
   }
 
-  // Documentation folder
-  structure.children!.push({
+  backendChildren.push(srcFolder);
+
+  backendChildren.push({
+    name: 'tests',
+    type: 'folder',
+    children: [
+      {
+        name: 'unit',
+        type: 'folder',
+        children: [{ name: '.gitkeep', type: 'file' as const }],
+      },
+      {
+        name: 'integration',
+        type: 'folder',
+        children: [{ name: '.gitkeep', type: 'file' as const }],
+      },
+    ],
+  });
+
+  backendChildren.push({
+    name: 'logs',
+    type: 'folder',
+    children: [{ name: '.gitkeep', type: 'file' as const }],
+  });
+
+  return {
+    name: 'backend',
+    type: 'folder',
+    children: backendChildren,
+  };
+}
+
+function buildDocsStructure(config: ProjectConfig, hasBackend: boolean): ProjectStructure {
+  return {
     name: 'docs',
     type: 'folder',
     children: [
@@ -489,17 +579,19 @@ export function generateProjectStructure(config: ProjectConfig): ProjectStructur
         content: hasBackend ? generateApiDoc(config) : undefined,
       },
     ],
-  });
+  };
+}
 
-  if (config.type === 'fullstack') {
-    structure.children!.push({
-      name: 'docker-compose.yml',
-      type: 'file',
-      content: `version: '3.8'\n\nservices:\n  frontend:\n    build:\n      context: ./frontend\n      dockerfile: Dockerfile\n    ports:\n      - "3000:3000"\n    depends_on:\n      - backend\n\n  backend:\n    build:\n      context: ./backend\n      dockerfile: Dockerfile\n    ports:\n      - "3001:3001"\n    environment:\n      - PORT=3001\n      - DATABASE_URL=postgresql://user:password@db:5432/${config.projectName}\n    depends_on:\n      - db\n\n  db:\n    image: postgres:15-alpine\n    ports:\n      - "5432:5432"\n    environment:\n      - POSTGRES_USER=user\n      - POSTGRES_PASSWORD=password\n      - POSTGRES_DB=${config.projectName}\n    volumes:\n      - postgres_data:/var/lib/postgresql/data\n\nvolumes:\n  postgres_data:\n`,
-    });
+function buildDockerCompose(config: ProjectConfig): ProjectStructure | null {
+  if (config.type !== 'fullstack') {
+    return null;
   }
 
-  return structure;
+  return {
+    name: 'docker-compose.yml',
+    type: 'file',
+    content: `version: '3.8'\n\nservices:\n  frontend:\n    build:\n      context: ./frontend\n      dockerfile: Dockerfile\n    ports:\n      - "3000:3000"\n    depends_on:\n      - backend\n\n  backend:\n    build:\n      context: ./backend\n      dockerfile: Dockerfile\n    ports:\n      - "3001:3001"\n    environment:\n      - PORT=3001\n      - DATABASE_URL=postgresql://user:password@db:5432/${config.projectName}\n    depends_on:\n      - db\n\n  db:\n    image: postgres:15-alpine\n    ports:\n      - "5432:5432"\n    environment:\n      - POSTGRES_USER=user\n      - POSTGRES_PASSWORD=password\n      - POSTGRES_DB=${config.projectName}\n    volumes:\n      - postgres_data:/var/lib/postgresql/data\n\nvolumes:\n  postgres_data:\n`,
+  };
 }
 
 function generatePackageJson(config: ProjectConfig): string {
@@ -515,6 +607,15 @@ function generatePackageJson(config: ProjectConfig): string {
     } else {
       dependencies['react-router-dom'] = '^6.20.0';
     }
+  }
+
+  if (config.globalState === 'zustand') {
+    dependencies['zustand'] = '^5.0.0';
+  }
+
+  if (config.globalState === 'redux-toolkit') {
+    dependencies['@reduxjs/toolkit'] = '^2.2.0';
+    dependencies['react-redux'] = '^9.1.0';
   }
 
   if (config.styling === 'tailwind') {
@@ -582,6 +683,13 @@ function generateTsConfig(config: ProjectConfig): string {
       noEmit: true,
       jsx: 'react-jsx',
       strict: true,
+      noImplicitReturns: true,
+      noImplicitThis: true,
+      useUnknownInCatchVariables: true,
+      exactOptionalPropertyTypes: true,
+      noUncheckedIndexedAccess: true,
+      forceConsistentCasingInFileNames: true,
+      allowSyntheticDefaultImports: true,
       noUnusedLocals: true,
       noUnusedParameters: true,
       noFallthroughCasesInSwitch: true,
@@ -601,6 +709,22 @@ function generateTsConfig(config: ProjectConfig): string {
     },
     include: ['src'],
     references: [{ path: './tsconfig.node.json' }],
+  }, null, 2);
+}
+
+function generateNodeTsConfig(config: ProjectConfig): string {
+  return JSON.stringify({
+    compilerOptions: {
+      composite: true,
+      module: 'ESNext',
+      moduleResolution: 'bundler',
+      allowSyntheticDefaultImports: true,
+      resolveJsonModule: true,
+      isolatedModules: true,
+      noEmit: true,
+      strict: true,
+    },
+    include: ['vite.config.*', 'vitest.config.*'],
   }, null, 2);
 }
 
@@ -625,7 +749,17 @@ function generateGitignore(config: ProjectConfig): string {
 
 function generateReadme(config: ProjectConfig): string {
   const hasBackend = ['api', 'fullstack'].includes(config.type);
-  return `# ${config.projectName}\n\n${config.description}\n\n## 🚀 Getting Started\n\n### Prerequisites\n\n- Node.js 18+\n- npm/yarn/pnpm\n\n### Installation\n\n\`\`\`bash\n# Install dependencies\nnpm install\n\n# Start development server\nnpm run dev\n\`\`\`\n\n## 📁 Project Structure\n\n\`\`\`\nsrc/\n├── components/     # Componentes reutilizaveis\n├── pages/          # Paginas da aplicacao\n├── hooks/          # Custom React hooks\n├── context/        # Contextos React\n├── services/       # Servicos e chamadas de API\n├── styles/         # Estilos globais\n├── types/          # Tipos TypeScript\n├── utils/          # Funcoes utilitarias\n└── assets/         # Imagens, icones, fontes\n\`\`\`\n\n## 🛠️ Tech Stack\n\n- **Framework:** ${config.framework}\n- **Language:** ${config.language === 'typescript' ? 'TypeScript' : 'JavaScript'}\n- **Styling:** ${config.styling}\n${config.database ? `- **Database:** ${config.database}` : ''}\n\n## 📋 Available Scripts\n\n- \`npm run dev\` - Start development server\n- \`npm run build\` - Build for production\n- \`npm run preview\` - Preview production build\n- \`npm run lint\` - Run ESLint\n- \`npm run test\` - Run tests\n\n## 📖 Documentation\n\n- [PRD](./docs/PRD.md) - Product Requirements Document\n- [Design System](./docs/DESIGN_SYSTEM.md)\n- [Architecture](./docs/ARCHITECTURE.md)\n${hasBackend ? `- [API Documentation](./docs/API.md)` : ''}\n\n## 🤝 Contributing\n\n1. Fork the repository\n2. Create your feature branch\n3. Commit your changes\n4. Push to the branch\n5. Open a Pull Request\n\n## 📄 License\n\nMIT License\n`;
+  const language: SupportedLanguage = config.cliLanguage ?? 'en';
+
+  if (language === 'pt') {
+    return `# ${config.projectName}\n\n${config.description}\n\n## 🚀 Começando\n\n### Pré-requisitos\n\n- Node.js 18+\n- npm/yarn/pnpm\n\n### Instalação\n\n\`\`\`bash\n# Instalar dependências\nnpm install\n\n# Iniciar servidor de desenvolvimento\nnpm run dev\n\`\`\`\n\n## 📁 Estrutura do Projeto\n\n\`\`\`\nsrc/\n├── components/     # Componentes reutilizáveis\n├── pages/          # Páginas da aplicação\n├── hooks/          # Custom React hooks\n├── context/        # Contextos React\n├── services/       # Serviços e chamadas de API\n├── styles/         # Estilos globais\n├── types/          # Tipos TypeScript\n├── utils/          # Funções utilitárias\n└── assets/         # Imagens, ícones, fontes\n\`\`\`\n\n## 🛠️ Stack Técnica\n\n- **Framework:** ${config.framework}\n- **Linguagem:** ${config.language === 'typescript' ? 'TypeScript' : 'JavaScript'}\n- **Estilização:** ${config.styling}\n${config.database ? `- **Banco de Dados:** ${config.database}` : ''}\n\n## 📋 Scripts Disponíveis\n\n- \`npm run dev\` - Inicia o servidor de desenvolvimento\n- \`npm run build\` - Gera build de produção\n- \`npm run preview\` - Preview do build de produção\n- \`npm run lint\` - Executa ESLint\n- \`npm run test\` - Executa testes\n\n## 📖 Documentação\n\n- [PRD](./docs/PRD.md) - Documento de Requisitos de Produto\n- [Design System](./docs/DESIGN_SYSTEM.md)\n- [Arquitetura](./docs/ARCHITECTURE.md)\n${hasBackend ? `- [Documentação da API](./docs/API.md)` : ''}\n\n## 🤝 Contribuindo\n\n1. Faça um fork do repositório\n2. Crie sua branch de feature\n3. Faça commit das mudanças\n4. Envie para sua branch\n5. Abra um Pull Request\n\n## 📄 Licença\n\nMIT License\n`;
+  }
+
+  if (language === 'es') {
+    return `# ${config.projectName}\n\n${config.description}\n\n## 🚀 Empezando\n\n### Prerrequisitos\n\n- Node.js 18+\n- npm/yarn/pnpm\n\n### Instalación\n\n\`\`\`bash\n# Instalar dependencias\nnpm install\n\n# Iniciar servidor de desarrollo\nnpm run dev\n\`\`\`\n\n## 📁 Estructura del Proyecto\n\n\`\`\`\nsrc/\n├── components/     # Componentes reutilizables\n├── pages/          # Páginas de la aplicación\n├── hooks/          # Custom React hooks\n├── context/        # Contextos React\n├── services/       # Servicios y llamadas a API\n├── styles/         # Estilos globales\n├── types/          # Tipos de TypeScript\n├── utils/          # Funciones utilitarias\n└── assets/         # Imágenes, íconos, fuentes\n\`\`\`\n\n## 🛠️ Stack Técnico\n\n- **Framework:** ${config.framework}\n- **Lenguaje:** ${config.language === 'typescript' ? 'TypeScript' : 'JavaScript'}\n- **Estilos:** ${config.styling}\n${config.database ? `- **Base de Datos:** ${config.database}` : ''}\n\n## 📋 Scripts Disponibles\n\n- \`npm run dev\` - Inicia el servidor de desarrollo\n- \`npm run build\` - Genera el build de producción\n- \`npm run preview\` - Preview del build de producción\n- \`npm run lint\` - Ejecuta ESLint\n- \`npm run test\` - Ejecuta tests\n\n## 📖 Documentación\n\n- [PRD](./docs/PRD.md) - Documento de Requisitos de Producto\n- [Design System](./docs/DESIGN_SYSTEM.md)\n- [Arquitectura](./docs/ARCHITECTURE.md)\n${hasBackend ? `- [Documentación de la API](./docs/API.md)` : ''}\n\n## 🤝 Contribuir\n\n1. Haz un fork del repositorio\n2. Crea tu rama de feature\n3. Haz commit de tus cambios\n4. Haz push a la rama\n5. Abre un Pull Request\n\n## 📄 Licencia\n\nMIT License\n`;
+  }
+
+  return `# ${config.projectName}\n\n${config.description}\n\n## 🚀 Getting Started\n\n### Prerequisites\n\n- Node.js 18+\n- npm/yarn/pnpm\n\n### Installation\n\n\`\`\`bash\n# Install dependencies\nnpm install\n\n# Start development server\nnpm run dev\n\`\`\`\n\n## 📁 Project Structure\n\n\`\`\`\nsrc/\n├── components/     # Reusable components\n├── pages/          # Application pages\n├── hooks/          # Custom React hooks\n├── context/        # React contexts\n├── services/       # Services and API calls\n├── styles/         # Global styles\n├── types/          # TypeScript types\n├── utils/          # Utility functions\n└── assets/         # Images, icons, fonts\n\`\`\`\n\n## 🛠️ Tech Stack\n\n- **Framework:** ${config.framework}\n- **Language:** ${config.language === 'typescript' ? 'TypeScript' : 'JavaScript'}\n- **Styling:** ${config.styling}\n${config.database ? `- **Database:** ${config.database}` : ''}\n\n## 📋 Available Scripts\n\n- \`npm run dev\` - Start development server\n- \`npm run build\` - Build for production\n- \`npm run preview\` - Preview production build\n- \`npm run lint\` - Run ESLint\n- \`npm run test\` - Run tests\n\n## 📖 Documentation\n\n- [PRD](./docs/PRD.md) - Product Requirements Document\n- [Design System](./docs/DESIGN_SYSTEM.md)\n- [Architecture](./docs/ARCHITECTURE.md)\n${hasBackend ? `- [API Documentation](./docs/API.md)` : ''}\n\n## 🤝 Contributing\n\n1. Fork the repository\n2. Create your feature branch\n3. Commit your changes\n4. Push to the branch\n5. Open a Pull Request\n\n## 📄 License\n\nMIT License\n`;
 }
 
 function generateEnvExample(config: ProjectConfig): string {
@@ -694,6 +828,18 @@ function generateApiService(config: ProjectConfig): string {
 
 function generateAuthService(config: ProjectConfig): string {
   return `import api from './api';\n\nexport interface LoginRequest {\n  email: string;\n  password: string;\n}\n\nexport interface RegisterRequest {\n  name: string;\n  email: string;\n  password: string;\n}\n\nexport interface AuthResponse {\n  token: string;\n  user: {\n    id: string;\n    email: string;\n    name: string;\n  };\n}\n\nexport const authService = {\n  async login(email: string, password: string): Promise<AuthResponse> {\n    const { data } = await api.post<AuthResponse>('/auth/login', { email, password });\n    return data;\n  },\n\n  async register(name: string, email: string, password: string): Promise<AuthResponse> {\n    const { data } = await api.post<AuthResponse>('/auth/register', { name, email, password });\n    return data;\n  },\n\n  async logout(): Promise<void> {\n    await api.post('/auth/logout');\n  },\n\n  async getCurrentUser(): Promise<AuthResponse['user']> {\n    const { data } = await api.get<AuthResponse['user']>('/auth/me');\n    return data;\n  },\n};\n`;
+}
+
+function generateZustandStore(config: ProjectConfig): string {
+  return `import { create } from 'zustand';\n\nexport interface AppState {\n  readonly isLoading: boolean;\n  readonly error: string | null;\n}\n\nexport interface AppActions {\n  readonly setLoading: (isLoading: boolean) => void;\n  readonly setError: (error: string | null) => void;\n  readonly clearError: () => void;\n}\n\nexport type AppStore = AppState & AppActions;\n\nexport const useAppStore = create<AppStore>((set) => ({\n  isLoading: false,\n  error: null,\n  setLoading: (isLoading) => set({ isLoading }),\n  setError: (error) => set({ error }),\n  clearError: () => set({ error: null }),\n}));\n`;
+}
+
+function generateReduxStore(config: ProjectConfig): string {
+  return `import { configureStore, createSlice, type PayloadAction } from '@reduxjs/toolkit';\n\nexport interface AppState {\n  readonly isLoading: boolean;\n  readonly error: string | null;\n}\n\nconst initialState: AppState = {\n  isLoading: false,\n  error: null,\n};\n\nconst appSlice = createSlice({\n  name: 'app',\n  initialState,\n  reducers: {\n    setLoading: (state, action: PayloadAction<boolean>) => {\n      state.isLoading = action.payload;\n    },\n    setError: (state, action: PayloadAction<string | null>) => {\n      state.error = action.payload;\n    },\n    clearError: (state) => {\n      state.error = null;\n    },\n  },\n});\n\nexport const { setLoading, setError, clearError } = appSlice.actions;\n\nexport const store = configureStore({\n  reducer: {\n    app: appSlice.reducer,\n  },\n});\n\nexport type RootState = ReturnType<typeof store.getState>;\nexport type AppDispatch = typeof store.dispatch;\n`;
+}
+
+function generateReduxHooks(config: ProjectConfig): string {
+  return `import { useDispatch, useSelector, type TypedUseSelectorHook } from 'react-redux';\nimport type { AppDispatch, RootState } from './index';\n\nexport const useAppDispatch: () => AppDispatch = useDispatch;\nexport const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;\n`;
 }
 
 function generateGlobalStyles(config: ProjectConfig): string {
@@ -806,9 +952,29 @@ function generateAuthServiceBackend(config: ProjectConfig): string {
 }
 
 function generateArchitectureDoc(config: ProjectConfig): string {
+  const language: SupportedLanguage = config.cliLanguage ?? 'en';
+
+  if (language === 'pt') {
+    return `# Arquitetura do Projeto\n\n## Visão Geral\n\nEste documento descreve a arquitetura e a estrutura do projeto **${config.projectName}**.\n\n## Stack de Tecnologia\n\n- **Frontend:** ${config.framework}\n- **Linguagem:** ${config.language === 'typescript' ? 'TypeScript' : 'JavaScript'}\n- **Estilização:** ${config.styling}\n${config.database ? `- **Banco de Dados:** ${config.database}` : ''}\n\n## Estrutura de Pastas\n\n\`\`\`\nsrc/\n├── components/     # Componentes React reutilizáveis\n├── pages/          # Páginas da aplicação\n├── hooks/          # Custom React hooks\n├── context/        # Contextos React (Auth, Theme, etc.)\n├── services/       # Serviços e chamadas de API\n├── styles/         # Estilos globais e variáveis CSS\n├── types/          # Tipos TypeScript\n├── utils/          # Funções utilitárias\n└── assets/         # Imagens, ícones, fontes\n\`\`\`\n\n## Padrões de Código\n\n### Componentes\n\n- Componentes funcionais com React Hooks\n- TypeScript para segurança de tipos\n- Styled Components/Tailwind para estilização\n- Testes unitários com Vitest + Testing Library\n\n### Nomenclatura\n\n- Componentes: PascalCase (ex.: \`Button.tsx\`)\n- Hooks: camelCase com prefixo \`use\` (ex.: \`useAuth.ts\`)\n- Utils: camelCase (ex.: \`formatDate.ts\`)\n- Tipos: PascalCase (ex.: \`User.ts\`)\n\n## Fluxo de Dados\n\n1. Componentes consomem dados via hooks\n2. Hooks chamam serviços\n3. Serviços fazem requisições HTTP pelo cliente de API\n4. Estado global gerenciado via Context API\n\n## Boas Práticas\n\n- Componentes pequenos e focados em uma única responsabilidade\n- Extrair lógica repetida para hooks personalizados\n- Usar TypeScript em modo estrito\n- Escrever testes para componentes e hooks críticos\n- Usar code splitting para rotas pesadas\n`;
+  }
+
+  if (language === 'es') {
+    return `# Arquitectura del Proyecto\n\n## Visión General\n\nEste documento describe la arquitectura y estructura del proyecto **${config.projectName}**.\n\n## Stack de Tecnología\n\n- **Frontend:** ${config.framework}\n- **Lenguaje:** ${config.language === 'typescript' ? 'TypeScript' : 'JavaScript'}\n- **Estilos:** ${config.styling}\n${config.database ? `- **Base de Datos:** ${config.database}` : ''}\n\n## Estructura de Carpetas\n\n\`\`\`\nsrc/\n├── components/     # Componentes React reutilizables\n├── pages/          # Páginas de la aplicación\n├── hooks/          # Custom React hooks\n├── context/        # Contextos React (Auth, Theme, etc.)\n├── services/       # Servicios y llamadas a la API\n├── styles/         # Estilos globales y variables CSS\n├── types/          # Tipos de TypeScript\n├── utils/          # Funciones utilitarias\n└── assets/         # Imágenes, íconos, fuentes\n\`\`\`\n\n## Estándares de Código\n\n### Componentes\n\n- Componentes funcionales con React Hooks\n- TypeScript para seguridad de tipos\n- Styled Components/Tailwind para estilos\n- Tests unitarios con Vitest + Testing Library\n\n### Nomenclatura\n\n- Componentes: PascalCase (ej.: \`Button.tsx\`)\n- Hooks: camelCase con prefijo \`use\` (ej.: \`useAuth.ts\`)\n- Utils: camelCase (ej.: \`formatDate.ts\`)\n- Tipos: PascalCase (ej.: \`User.ts\`)\n\n## Flujo de Datos\n\n1. Los componentes consumen datos mediante hooks\n2. Los hooks llaman a los servicios\n3. Los servicios realizan peticiones HTTP a través del cliente de API\n4. El estado global se gestiona mediante Context API\n\n## Buenas Prácticas\n\n- Componentes pequeños y enfocados en una sola responsabilidad\n- Extraer lógica repetida a hooks personalizados\n- Usar TypeScript en modo estricto\n- Escribir tests para componentes y hooks críticos\n- Usar code splitting para rutas pesadas\n`;
+  }
+
   return `# Project Architecture\n\n## Overview\n\nThis document describes the architecture and structure of the **${config.projectName}** project.\n\n## Technology Stack\n\n- **Frontend:** ${config.framework}\n- **Language:** ${config.language === 'typescript' ? 'TypeScript' : 'JavaScript'}\n- **Styling:** ${config.styling}\n${config.database ? `- **Database:** ${config.database}` : ''}\n\n## Folder Structure\n\n\`\`\`\nsrc/\n├── components/     # Reusable React components\n├── pages/          # Application pages\n├── hooks/          # Custom React hooks\n├── context/        # React contexts (Auth, Theme, etc.)\n├── services/       # Services and API calls\n├── styles/         # Global styles and CSS variables\n├── types/          # TypeScript types\n├── utils/          # Utility functions\n└── assets/         # Images, icons, fonts\n\`\`\`\n\n## Code Standards\n\n### Components\n\n- Functional components with React Hooks\n- TypeScript for type safety\n- Styled Components/Tailwind for styling\n- Unit tests with Vitest + Testing Library\n\n### Naming\n\n- Components: PascalCase (e.g. \`Button.tsx\`)\n- Hooks: camelCase with \`use\` prefix (e.g. \`useAuth.ts\`)\n- Utils: camelCase (e.g. \`formatDate.ts\`)\n- Types: PascalCase (e.g. \`User.ts\`)\n\n## Data Flow\n\n1. Components consume data via hooks\n2. Hooks call services\n3. Services perform HTTP requests through the API client\n4. Global state managed via Context API\n\n## Best Practices\n\n- Small, focused components with a single responsibility\n- Extract repeated logic to custom hooks\n- Use TypeScript in strict mode\n- Write unit tests for critical components and hooks\n- Use code splitting for heavy routes\n`;
 }
 
 function generateApiDoc(config: ProjectConfig): string {
+  const language: SupportedLanguage = config.cliLanguage ?? 'en';
+
+  if (language === 'pt') {
+    return `# Documentação da API\n\n## URL Base\n\n\`\`\`\nDesenvolvimento: http://localhost:3000/api\nProdução: https://api.yoursite.com/api\n\`\`\`\n\n## Autenticação\n\nA API utiliza JWT para autenticação. Inclua o token no cabeçalho Authorization:\n\n\`\`\`\nAuthorization: Bearer <token>\n\`\`\`\n\n## Endpoints\n\n### Auth\n\n#### POST /auth/register\n\`\`\`json\n{\n  "name": "John Doe",\n  "email": "john@example.com",\n  "password": "securepassword"\n}\n\`\`\`\n\n#### POST /auth/login\n\`\`\`json\n{\n  "email": "john@example.com",\n  "password": "securepassword"\n}\n\`\`\`\n\n#### GET /auth/me\nRequer autenticação.\n\n### Users\n\n#### GET /users/profile\nRequer autenticação.\n\n#### PUT /users/profile\nRequer autenticação.\n\n## Códigos de Status\n\n- \`200\` - Sucesso\n- \`201\` - Criado\n- \`400\` - Requisição inválida\n- \`401\` - Não autorizado\n- \`404\` - Não encontrado\n- \`500\` - Erro interno do servidor\n`;
+  }
+
+  if (language === 'es') {
+    return `# Documentación de la API\n\n## URL Base\n\n\`\`\`\nDesarrollo: http://localhost:3000/api\nProducción: https://api.yoursite.com/api\n\`\`\`\n\n## Autenticación\n\nLa API utiliza JWT para autenticación. Incluye el token en el encabezado Authorization:\n\n\`\`\`\nAuthorization: Bearer <token>\n\`\`\`\n\n## Endpoints\n\n### Auth\n\n#### POST /auth/register\n\`\`\`json\n{\n  "name": "John Doe",\n  "email": "john@example.com",\n  "password": "securepassword"\n}\n\`\`\`\n\n#### POST /auth/login\n\`\`\`json\n{\n  "email": "john@example.com",\n  "password": "securepassword"\n}\n\`\`\`\n\n#### GET /auth/me\nRequiere autenticación.\n\n### Users\n\n#### GET /users/profile\nRequiere autenticación.\n\n#### PUT /users/profile\nRequiere autenticación.\n\n## Códigos de Estado\n\n- \`200\` - Éxito\n- \`201\` - Creado\n- \`400\` - Petición inválida\n- \`401\` - No autorizado\n- \`404\` - No encontrado\n- \`500\` - Error interno del servidor\n`;
+  }
+
   return `# API Documentation\n\n## Base URL\n\n\`\`\`\nDevelopment: http://localhost:3000/api\nProduction: https://api.yoursite.com/api\n\`\`\`\n\n## Authentication\n\nThe API uses JWT for authentication. Include the token in the Authorization header:\n\n\`\`\`\nAuthorization: Bearer <token>\n\`\`\`\n\n## Endpoints\n\n### Auth\n\n#### POST /auth/register\n\`\`\`json\n{\n  "name": "John Doe",\n  "email": "john@example.com",\n  "password": "securepassword"\n}\n\`\`\`\n\n#### POST /auth/login\n\`\`\`json\n{\n  "email": "john@example.com",\n  "password": "securepassword"\n}\n\`\`\`\n\n#### GET /auth/me\nRequires authentication.\n\n### Users\n\n#### GET /users/profile\nRequires authentication.\n\n#### PUT /users/profile\nRequires authentication.\n\n## Status Codes\n\n- \`200\` - Success\n- \`201\` - Created\n- \`400\` - Bad Request\n- \`401\` - Unauthorized\n- \`404\` - Not Found\n- \`500\` - Internal Server Error\n`;
 }
