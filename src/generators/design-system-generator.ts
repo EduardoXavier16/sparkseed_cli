@@ -1,4 +1,4 @@
-import { ProjectConfig, DesignSystem, ColorSystem, ColorToken, SemanticColors, ColorUsage, TypographySystem, FontFamily, FontSize, FontWeight, LineHeight, HeadingStyle, BodyTextStyle, SpacingSystem, SpacingToken, SpacingUsage, BreakpointSystem, Breakpoint, MediaQuery, ComponentSpec, DesignGuidelines, DesignPrinciple, AccessibilityGuideline, ResponsiveGuideline, MotionGuideline } from '../types';
+import { BreakpointSystem, ColorSystem, ComponentSpec, DesignGuidelines, DesignSystem, ProjectConfig, SpacingSystem, TypographySystem } from '../types';
 
 export function generateDesignSystem(config: ProjectConfig): DesignSystem {
   const colorPalette = config.colorPalette;
@@ -6,52 +6,52 @@ export function generateDesignSystem(config: ProjectConfig): DesignSystem {
   const colorSystem: ColorSystem = {
     palette: {
       primary: [
-        { name: 'primary-50', value: '50', hex: lightenColor(colorPalette.primary, 40), usage: 'Fundos sutis, hover states' },
-        { name: 'primary-100', value: '100', hex: lightenColor(colorPalette.primary, 30), usage: 'Fundos, bordas' },
-        { name: 'primary-200', value: '200', hex: lightenColor(colorPalette.primary, 20), usage: 'Elementos secundários' },
-        { name: 'primary-300', value: '300', hex: lightenColor(colorPalette.primary, 10), usage: 'Elementos de destaque suave' },
-        { name: 'primary-400', value: '400', hex: lightenColor(colorPalette.primary, 5), usage: 'Hover de botões primários' },
-        { name: 'primary-500', value: '500', hex: colorPalette.primary, usage: 'Cor primária principal' },
-        { name: 'primary-600', value: '600', hex: darkenColor(colorPalette.primary, 5), usage: 'Active de botões' },
-        { name: 'primary-700', value: '700', hex: darkenColor(colorPalette.primary, 10), usage: 'Elementos em foco' },
-        { name: 'primary-800', value: '800', hex: darkenColor(colorPalette.primary, 20), usage: 'Textos em destaque' },
-        { name: 'primary-900', value: '900', hex: darkenColor(colorPalette.primary, 30), usage: 'Textos principais' },
+        { name: 'primary-50', value: '50', hex: lightenColor(colorPalette.primary, 40), usage: 'Subtle backgrounds, hover states' },
+        { name: 'primary-100', value: '100', hex: lightenColor(colorPalette.primary, 30), usage: 'Backgrounds, borders' },
+        { name: 'primary-200', value: '200', hex: lightenColor(colorPalette.primary, 20), usage: 'Secondary elements' },
+        { name: 'primary-300', value: '300', hex: lightenColor(colorPalette.primary, 10), usage: 'Soft highlight elements' },
+        { name: 'primary-400', value: '400', hex: lightenColor(colorPalette.primary, 5), usage: 'Primary button hover' },
+        { name: 'primary-500', value: '500', hex: colorPalette.primary, usage: 'Main primary color' },
+        { name: 'primary-600', value: '600', hex: darkenColor(colorPalette.primary, 5), usage: 'Primary button active' },
+        { name: 'primary-700', value: '700', hex: darkenColor(colorPalette.primary, 10), usage: 'Focused elements' },
+        { name: 'primary-800', value: '800', hex: darkenColor(colorPalette.primary, 20), usage: 'Highlighted text' },
+        { name: 'primary-900', value: '900', hex: darkenColor(colorPalette.primary, 30), usage: 'Primary text' },
       ],
       secondary: [
-        { name: 'secondary-50', value: '50', hex: lightenColor(colorPalette.secondary, 40), usage: 'Fundos sutis' },
-        { name: 'secondary-100', value: '100', hex: lightenColor(colorPalette.secondary, 30), usage: 'Fundos' },
-        { name: 'secondary-200', value: '200', hex: lightenColor(colorPalette.secondary, 20), usage: 'Elementos secundários' },
-        { name: 'secondary-300', value: '300', hex: lightenColor(colorPalette.secondary, 10), usage: 'Destaques suaves' },
-        { name: 'secondary-400', value: '400', hex: lightenColor(colorPalette.secondary, 5), usage: 'Hover secundário' },
-        { name: 'secondary-500', value: '500', hex: colorPalette.secondary, usage: 'Cor secundária principal' },
-        { name: 'secondary-600', value: '600', hex: darkenColor(colorPalette.secondary, 5), usage: 'Active secundário' },
-        { name: 'secondary-700', value: '700', hex: darkenColor(colorPalette.secondary, 10), usage: 'Foco secundário' },
-        { name: 'secondary-800', value: '800', hex: darkenColor(colorPalette.secondary, 20), usage: 'Textos secundários' },
-        { name: 'secondary-900', value: '900', hex: darkenColor(colorPalette.secondary, 30), usage: 'Textos em destaque' },
+        { name: 'secondary-50', value: '50', hex: lightenColor(colorPalette.secondary, 40), usage: 'Subtle backgrounds' },
+        { name: 'secondary-100', value: '100', hex: lightenColor(colorPalette.secondary, 30), usage: 'Backgrounds' },
+        { name: 'secondary-200', value: '200', hex: lightenColor(colorPalette.secondary, 20), usage: 'Secondary elements' },
+        { name: 'secondary-300', value: '300', hex: lightenColor(colorPalette.secondary, 10), usage: 'Soft highlights' },
+        { name: 'secondary-400', value: '400', hex: lightenColor(colorPalette.secondary, 5), usage: 'Secondary hover' },
+        { name: 'secondary-500', value: '500', hex: colorPalette.secondary, usage: 'Main secondary color' },
+        { name: 'secondary-600', value: '600', hex: darkenColor(colorPalette.secondary, 5), usage: 'Secondary active' },
+        { name: 'secondary-700', value: '700', hex: darkenColor(colorPalette.secondary, 10), usage: 'Secondary focus' },
+        { name: 'secondary-800', value: '800', hex: darkenColor(colorPalette.secondary, 20), usage: 'Secondary text' },
+        { name: 'secondary-900', value: '900', hex: darkenColor(colorPalette.secondary, 30), usage: 'Highlighted secondary text' },
       ],
       accent: [
-        { name: 'accent-50', value: '50', hex: lightenColor(colorPalette.accent, 40), usage: 'Fundos sutis de destaque' },
-        { name: 'accent-100', value: '100', hex: lightenColor(colorPalette.accent, 30), usage: 'Fundos de destaque' },
-        { name: 'accent-200', value: '200', hex: lightenColor(colorPalette.accent, 20), usage: 'Elementos de destaque' },
-        { name: 'accent-300', value: '300', hex: lightenColor(colorPalette.accent, 10), usage: 'Destaques' },
-        { name: 'accent-400', value: '400', hex: lightenColor(colorPalette.accent, 5), usage: 'Hover de destaque' },
-        { name: 'accent-500', value: '500', hex: colorPalette.accent, usage: 'Cor de destaque principal' },
-        { name: 'accent-600', value: '600', hex: darkenColor(colorPalette.accent, 5), usage: 'Active de destaque' },
-        { name: 'accent-700', value: '700', hex: darkenColor(colorPalette.accent, 10), usage: 'Foco de destaque' },
-        { name: 'accent-800', value: '800', hex: darkenColor(colorPalette.accent, 20), usage: 'Textos de destaque' },
-        { name: 'accent-900', value: '900', hex: darkenColor(colorPalette.accent, 30), usage: 'Textos importantes' },
+        { name: 'accent-50', value: '50', hex: lightenColor(colorPalette.accent, 40), usage: 'Subtle accent backgrounds' },
+        { name: 'accent-100', value: '100', hex: lightenColor(colorPalette.accent, 30), usage: 'Accent backgrounds' },
+        { name: 'accent-200', value: '200', hex: lightenColor(colorPalette.accent, 20), usage: 'Accent elements' },
+        { name: 'accent-300', value: '300', hex: lightenColor(colorPalette.accent, 10), usage: 'Accents' },
+        { name: 'accent-400', value: '400', hex: lightenColor(colorPalette.accent, 5), usage: 'Accent hover' },
+        { name: 'accent-500', value: '500', hex: colorPalette.accent, usage: 'Main accent color' },
+        { name: 'accent-600', value: '600', hex: darkenColor(colorPalette.accent, 5), usage: 'Accent active' },
+        { name: 'accent-700', value: '700', hex: darkenColor(colorPalette.accent, 10), usage: 'Accent focus' },
+        { name: 'accent-800', value: '800', hex: darkenColor(colorPalette.accent, 20), usage: 'Accent text' },
+        { name: 'accent-900', value: '900', hex: darkenColor(colorPalette.accent, 30), usage: 'Important accent text' },
       ],
       neutral: [
-        { name: 'neutral-50', value: '50', hex: '#F9FAFB', usage: 'Fundos de página' },
-        { name: 'neutral-100', value: '100', hex: '#F3F4F6', usage: 'Fundos de cards' },
-        { name: 'neutral-200', value: '200', hex: '#E5E7EB', usage: 'Bordas sutis' },
-        { name: 'neutral-300', value: '300', hex: '#D1D5DB', usage: 'Bordas' },
-        { name: 'neutral-400', value: '400', hex: '#9CA3AF', usage: 'Texto desabilitado' },
-        { name: 'neutral-500', value: '500', hex: '#6B7280', usage: 'Texto secundário' },
-        { name: 'neutral-600', value: '600', hex: '#4B5563', usage: 'Texto de corpo' },
-        { name: 'neutral-700', value: '700', hex: '#374151', usage: 'Texto principal' },
-        { name: 'neutral-800', value: '800', hex: '#1F2937', usage: 'Títulos' },
-        { name: 'neutral-900', value: '900', hex: '#111827', usage: 'Texto em destaque' },
+        { name: 'neutral-50', value: '50', hex: '#F9FAFB', usage: 'Page backgrounds' },
+        { name: 'neutral-100', value: '100', hex: '#F3F4F6', usage: 'Card backgrounds' },
+        { name: 'neutral-200', value: '200', hex: '#E5E7EB', usage: 'Subtle borders' },
+        { name: 'neutral-300', value: '300', hex: '#D1D5DB', usage: 'Borders' },
+        { name: 'neutral-400', value: '400', hex: '#9CA3AF', usage: 'Disabled text' },
+        { name: 'neutral-500', value: '500', hex: '#6B7280', usage: 'Secondary text' },
+        { name: 'neutral-600', value: '600', hex: '#4B5563', usage: 'Body text' },
+        { name: 'neutral-700', value: '700', hex: '#374151', usage: 'Primary text' },
+        { name: 'neutral-800', value: '800', hex: '#1F2937', usage: 'Headings' },
+        { name: 'neutral-900', value: '900', hex: '#111827', usage: 'Emphasis text' },
       ],
     },
     semantic: {
@@ -66,21 +66,21 @@ export function generateDesignSystem(config: ProjectConfig): DesignSystem {
       info: 'blue-500',
     },
     usage: [
-      { token: 'primary-500', useCase: 'Botões primários, links, CTAs', example: 'bg-primary-500 hover:bg-primary-600' },
-      { token: 'secondary-500', useCase: 'Botões secundários, ações alternativas', example: 'bg-secondary-500 hover:bg-secondary-600' },
-      { token: 'accent-500', useCase: 'Destaques, badges, notificações', example: 'text-accent-500' },
-      { token: 'neutral-50', useCase: 'Fundo da página', example: 'bg-neutral-50' },
-      { token: 'neutral-100', useCase: 'Fundo de cards e superfícies', example: 'bg-neutral-100' },
-      { token: 'neutral-700', useCase: 'Texto de títulos', example: 'text-neutral-700' },
-      { token: 'neutral-500', useCase: 'Texto de corpo e descrições', example: 'text-neutral-500' },
+      { token: 'primary-500', useCase: 'Primary buttons, links, CTAs', example: 'bg-primary-500 hover:bg-primary-600' },
+      { token: 'secondary-500', useCase: 'Secondary buttons, alternative actions', example: 'bg-secondary-500 hover:bg-secondary-600' },
+      { token: 'accent-500', useCase: 'Highlights, badges, notifications', example: 'text-accent-500' },
+      { token: 'neutral-50', useCase: 'Page background', example: 'bg-neutral-50' },
+      { token: 'neutral-100', useCase: 'Card and surface backgrounds', example: 'bg-neutral-100' },
+      { token: 'neutral-700', useCase: 'Heading text', example: 'text-neutral-700' },
+      { token: 'neutral-500', useCase: 'Body text and descriptions', example: 'text-neutral-500' },
     ],
   };
 
   const typographySystem: TypographySystem = {
     fontFamilies: [
-      { name: config.typography.fontFamily.heading, variable: '--font-heading', usage: 'Títulos e headings' },
-      { name: config.typography.fontFamily.body, variable: '--font-body', usage: 'Texto de corpo e parágrafos' },
-      { name: config.typography.fontFamily.mono, variable: '--font-mono', usage: 'Código e dados técnicos' },
+      { name: config.typography.fontFamily.heading, variable: '--font-heading', usage: 'Headings and titles' },
+      { name: config.typography.fontFamily.body, variable: '--font-body', usage: 'Body text and paragraphs' },
+      { name: config.typography.fontFamily.mono, variable: '--font-mono', usage: 'Code and technical data' },
     ],
     fontSizes: [
       { name: 'xs', value: '12px', css: '0.75rem' },
@@ -302,12 +302,12 @@ export function formatDesignSystem(ds: DesignSystem): string {
   markdown += `${ds.introduction}\n\n`;
 
   // Colors
-  markdown += `## 🌈 Cores\n\n`;
-  markdown += `O sistema de cores é baseado em uma paleta semântica que facilita a manutenção e garante consistência visual.\n\n`;
+  markdown += `## 🌈 Colors\n\n`;
+  markdown += `The color system is based on a semantic palette that makes maintenance easier and ensures visual consistency.\n\n`;
 
   Object.entries(ds.colors.palette).forEach(([category, tokens]) => {
     markdown += `### ${capitalizeFirst(category)}\n\n`;
-    markdown += `| Token | Hex | Uso |\n`;
+    markdown += `| Token | Hex | Usage |\n`;
     markdown += `|-------|-----|-----|\n`;
     tokens.forEach((token) => {
       markdown += `| \`${token.name}\` | \`${token.hex}\` | ${token.usage} |\n`;
@@ -315,8 +315,8 @@ export function formatDesignSystem(ds: DesignSystem): string {
     markdown += `\n`;
   });
 
-  markdown += `### Cores Semânticas\n\n`;
-  markdown += `| Token | Valor | Uso |\n`;
+  markdown += `### Semantic Colors\n\n`;
+  markdown += `| Token | Value | Usage |\n`;
   markdown += `|-------|-------|-----|\n`;
   Object.entries(ds.colors.semantic).forEach(([key, value]) => {
     markdown += `| ${capitalizeFirst(key)} | \`${value}\` | ${getSemanticColorUsage(key)} |\n`;
@@ -324,18 +324,18 @@ export function formatDesignSystem(ds: DesignSystem): string {
   markdown += `\n`;
 
   // Typography
-  markdown += `## 📝 Tipografia\n\n`;
+  markdown += `## 📝 Typography\n\n`;
 
-  markdown += `### Famílias de Fonte\n\n`;
-  markdown += `| Nome | Variável CSS | Uso |\n`;
+  markdown += `### Font Families\n\n`;
+  markdown += `| Name | CSS Variable | Usage |\n`;
   markdown += `|------|--------------|-----|\n`;
   ds.typography.fontFamilies.forEach((font) => {
     markdown += `| ${font.name} | \`${font.variable}\` | ${font.usage} |\n`;
   });
   markdown += `\n`;
 
-  markdown += `### Tamanhos de Fonte\n\n`;
-  markdown += `| Nome | Valor | CSS |\n`;
+  markdown += `### Font Sizes\n\n`;
+  markdown += `| Name | Value | CSS |\n`;
   markdown += `|------|-------|-----|\n`;
   ds.typography.fontSizes.forEach((size) => {
     markdown += `| ${size.name} | ${size.value} | \`${size.css}\` |\n`;
@@ -343,7 +343,7 @@ export function formatDesignSystem(ds: DesignSystem): string {
   markdown += `\n`;
 
   markdown += `### Headings\n\n`;
-  markdown += `| Nível | Tamanho | Peso | Line Height |\n`;
+  markdown += `| Level | Size | Weight | Line Height |\n`;
   markdown += `|-------|-----------|------|-------------|\n`;
   ds.typography.headings.forEach((heading) => {
     markdown += `| ${heading.level} | ${heading.fontSize} | ${heading.fontWeight} | ${heading.lineHeight} |\n`;
@@ -351,8 +351,8 @@ export function formatDesignSystem(ds: DesignSystem): string {
   markdown += `\n`;
 
   // Spacing
-  markdown += `## 📏 Espaçamento\n\n`;
-  markdown += `| Token | Valor | Rem |\n`;
+  markdown += `## 📏 Spacing\n\n`;
+  markdown += `| Token | Value | Rem |\n`;
   markdown += `|-------|-------|-----|\n`;
   ds.spacing.scale.forEach((space) => {
     markdown += `| ${space.name} | ${space.value} | \`${space.rem}\` |\n`;
@@ -361,21 +361,21 @@ export function formatDesignSystem(ds: DesignSystem): string {
 
   // Breakpoints
   markdown += `## 📱 Breakpoints\n\n`;
-  markdown += `| Nome | Valor | Descrição |\n`;
-  markdown += `|------|-------|-----------|\n`;
+  markdown += `| Name | Value | Description |\n`;
+  markdown += `|------|-------|-------------|\n`;
   ds.breakpoints.breakpoints.forEach((bp) => {
     markdown += `| ${bp.name} | ${bp.value} | ${bp.description} |\n`;
   });
   markdown += `\n`;
 
   // Components
-  markdown += `## 🧩 Componentes\n\n`;
+  markdown += `## 🧩 Components\n\n`;
   ds.components.forEach((component) => {
     markdown += `### ${component.name}\n\n`;
     markdown += `${component.description}\n\n`;
-    markdown += `**Variantes:** ${component.variants.join(', ')}\n\n`;
-    markdown += `**Estados:** ${component.states.join(', ')}\n\n`;
-    markdown += `**Acessibilidade:**\n`;
+    markdown += `**Variants:** ${component.variants.join(', ')}\n\n`;
+    markdown += `**States:** ${component.states.join(', ')}\n\n`;
+    markdown += `**Accessibility:**\n`;
     component.accessibility.forEach((acc) => {
       markdown += `- ${acc}\n`;
     });
@@ -383,44 +383,44 @@ export function formatDesignSystem(ds: DesignSystem): string {
   });
 
   // Guidelines
-  markdown += `## 📐 Diretrizes de Design\n\n`;
+  markdown += `## 📐 Design Guidelines\n\n`;
 
-  markdown += `### Princípios\n\n`;
+  markdown += `### Principles\n\n`;
   ds.guidelines.principles.forEach((principle) => {
     markdown += `#### ${principle.name}\n\n`;
     markdown += `${principle.description}\n\n`;
-    markdown += `**Exemplos:**\n`;
+    markdown += `**Examples:**\n`;
     principle.examples.forEach((example) => {
       markdown += `- ${example}\n`;
     });
     markdown += `\n`;
   });
 
-  markdown += `### Acessibilidade\n\n`;
-  markdown += `| Princípio | Requisito | Implementação |\n`;
-  markdown += `|-----------|-----------|---------------|\n`;
+  markdown += `### Accessibility\n\n`;
+  markdown += `| Principle | Requirement | Implementation |\n`;
+  markdown += `|-----------|-------------|----------------|\n`;
   ds.guidelines.accessibility.forEach((acc) => {
     markdown += `| ${acc.principle} | ${acc.requirement} | ${acc.implementation} |\n`;
   });
   markdown += `\n`;
 
-  markdown += `### Design Responsivo\n\n`;
+  markdown += `### Responsive Design\n\n`;
   ds.guidelines.responsiveDesign.forEach((resp) => {
     markdown += `#### ${resp.breakpoint}\n\n`;
-    markdown += `**Diretriz:** ${resp.guideline}\n\n`;
-    markdown += `**Exemplo:** ${resp.example}\n\n`;
+    markdown += `**Guideline:** ${resp.guideline}\n\n`;
+    markdown += `**Example:** ${resp.example}\n\n`;
   });
 
   markdown += `### Motion\n\n`;
-  markdown += `| Tipo | Duração | Easing | Uso |\n`;
-  markdown += `|------|---------|--------|-----|\n`;
+  markdown += `| Type | Duration | Easing | Usage |\n`;
+  markdown += `|------|----------|--------|-------|\n`;
   ds.guidelines.motion.forEach((motion) => {
     markdown += `| ${motion.type} | ${motion.duration} | ${motion.easing} | ${motion.useCase} |\n`;
   });
   markdown += `\n`;
 
   markdown += `---\n\n`;
-  markdown += `*Design System gerado automaticamente pela CLI Boilerplate*\n`;
+  markdown += `*Design System automatically generated by the sparkseed CLI*\n`;
 
   return markdown;
 }
@@ -450,15 +450,15 @@ function capitalizeFirst(str: string): string {
 
 function getSemanticColorUsage(name: string): string {
   const usages: Record<string, string> = {
-    primary: 'Ações primárias, links, CTAs',
-    secondary: 'Ações secundárias, elementos de suporte',
-    accent: 'Destaques, notificações, badges',
-    background: 'Fundo da página',
-    surface: 'Fundo de cards, modais, superfícies',
-    error: 'Mensagens de erro, estados inválidos',
-    success: 'Mensagens de sucesso, confirmações',
-    warning: 'Alertas, avisos importantes',
-    info: 'Informações, dicas',
+    primary: 'Primary actions, links, CTAs',
+    secondary: 'Secondary actions, supporting elements',
+    accent: 'Highlights, notifications, badges',
+    background: 'Page background',
+    surface: 'Card, modal and surface backgrounds',
+    error: 'Error messages, invalid states',
+    success: 'Success messages, confirmations',
+    warning: 'Alerts, important warnings',
+    info: 'Informational content, tips',
   };
   return usages[name] || name;
 }

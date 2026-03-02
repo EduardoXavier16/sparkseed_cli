@@ -1,7 +1,7 @@
 {
   "name": "sparkseed",
   "version": "1.0.0",
-  "description": "CLI interativa que gera boilerplates completos de projetos com PRD, Design System e arquitetura",
+  "description": "Interactive CLI that generates complete project boilerplates with PRD, Design System and architecture",
   "main": "dist/index.js",
   "bin": {
     "sparkseed": "./dist/index.js"
