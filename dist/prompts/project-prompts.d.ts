@@ -1,3 +1,43 @@
-import { ProjectConfig } from '../types';
+import { ProjectConfig, SupportedLanguage } from '../types';
+interface IProjectPromptTexts {
+    readonly projectNameMessage: string;
+    readonly projectNameRequired: string;
+    readonly projectDescriptionMessage: string;
+    readonly projectDescriptionDefault: string;
+    readonly projectTypeMessage: string;
+    readonly frameworkMessage: string;
+    readonly languageMessage: string;
+    readonly stylingMessage: string;
+    readonly cssPureLabel: string;
+    readonly targetAudienceMessage: string;
+    readonly targetAudienceDefault: string;
+    readonly mainGoalMessage: string;
+    readonly mainGoalDefault: string;
+    readonly databaseMessage: string;
+    readonly noDatabaseLabel: string;
+    readonly authMessage: string;
+    readonly featuresMessage: string;
+    readonly pagesMessage: string;
+    readonly pagesDefault: string;
+    readonly componentsMessage: string;
+    readonly componentsDefault: string;
+    readonly localeMessage: string;
+    readonly primaryColorMessage: string;
+    readonly secondaryColorMessage: string;
+    readonly accentColorMessage: string;
+    readonly backgroundColorMessage: string;
+    readonly surfaceColorMessage: string;
+    readonly fontFamilyMessage: string;
+    readonly globalStateMessage: string;
+    readonly globalStateNoneLabel: string;
+    readonly globalStateZustandLabel: string;
+    readonly globalStateReduxToolkitLabel: string;
+    readonly languageSelectMessage: string;
+    readonly languageOptionEnglish: string;
+    readonly languageOptionPortuguese: string;
+    readonly languageOptionSpanish: string;
+}
+export declare function getProjectPromptTexts(language: SupportedLanguage): IProjectPromptTexts;
 export declare function askProjectQuestions(): Promise<ProjectConfig>;
+export {};
 //# sourceMappingURL=project-prompts.d.ts.map

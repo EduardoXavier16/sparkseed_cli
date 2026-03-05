@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.getProjectPromptTexts = getProjectPromptTexts;
 exports.askProjectQuestions = askProjectQuestions;
 const inquirer_1 = __importDefault(require("inquirer"));
 const PROMPT_TEXTS = {
@@ -28,12 +29,17 @@ const PROMPT_TEXTS = {
         pagesDefault: 'Home, About, Contact, Login, Dashboard',
         componentsMessage: 'Which common components do you need? (separate with commas)',
         componentsDefault: 'Button, Input, Card, Modal, Navbar, Sidebar, Table, Form',
+        localeMessage: 'What is the primary locale for formatting (e.g. en-US, pt-BR, es-ES)?',
         primaryColorMessage: 'Primary color (hex or name):',
         secondaryColorMessage: 'Secondary color (hex or name):',
         accentColorMessage: 'Accent color (hex or name):',
         backgroundColorMessage: 'Background color:',
         surfaceColorMessage: 'Surface color (cards, modals):',
         fontFamilyMessage: 'Which font family do you want to use?',
+        globalStateMessage: 'Do you want to add a global state library?',
+        globalStateNoneLabel: '🚫 No global state library',
+        globalStateZustandLabel: '🧠 Zustand (simple, hooks-based store)',
+        globalStateReduxToolkitLabel: '🧰 Redux Toolkit (scalable state management)',
         languageSelectMessage: 'Select the language for the interactive questions:',
         languageOptionEnglish: 'English',
         languageOptionPortuguese: 'Portuguese',
@@ -61,12 +67,17 @@ const PROMPT_TEXTS = {
         pagesDefault: 'Home, Sobre, Contato, Login, Dashboard',
         componentsMessage: 'Quais componentes comuns você precisa? (separe com vírgulas)',
         componentsDefault: 'Button, Input, Card, Modal, Navbar, Sidebar, Table, Form',
+        localeMessage: 'Qual é o locale principal para formatação (ex.: en-US, pt-BR, es-ES)?',
         primaryColorMessage: 'Cor primária (hex ou nome):',
         secondaryColorMessage: 'Cor secundária (hex ou nome):',
         accentColorMessage: 'Cor de destaque (hex ou nome):',
         backgroundColorMessage: 'Cor de fundo:',
         surfaceColorMessage: 'Cor de superfície (cards, modais):',
         fontFamilyMessage: 'Qual família de fonte você quer usar?',
+        globalStateMessage: 'Você quer adicionar uma biblioteca de estado global?',
+        globalStateNoneLabel: '🚫 Sem biblioteca de estado global',
+        globalStateZustandLabel: '🧠 Zustand (store simples baseado em hooks)',
+        globalStateReduxToolkitLabel: '🧰 Redux Toolkit (estado global escalável)',
         languageSelectMessage: 'Selecione o idioma para as perguntas interativas:',
         languageOptionEnglish: 'Inglês',
         languageOptionPortuguese: 'Português',
@@ -94,18 +105,26 @@ const PROMPT_TEXTS = {
         pagesDefault: 'Home, Acerca de, Contacto, Login, Dashboard',
         componentsMessage: '¿Qué componentes comunes necesitas? (separa con comas)',
         componentsDefault: 'Button, Input, Card, Modal, Navbar, Sidebar, Table, Form',
+        localeMessage: '¿Cuál es el locale principal para formato (ej.: en-US, pt-BR, es-ES)?',
         primaryColorMessage: 'Color primario (hex o nombre):',
         secondaryColorMessage: 'Color secundario (hex o nombre):',
         accentColorMessage: 'Color de acento (hex o nombre):',
         backgroundColorMessage: 'Color de fondo:',
         surfaceColorMessage: 'Color de superficie (cards, modals):',
         fontFamilyMessage: '¿Qué familia tipográfica quieres usar?',
+        globalStateMessage: '¿Quieres añadir una librería de estado global?',
+        globalStateNoneLabel: '🚫 Sin librería de estado global',
+        globalStateZustandLabel: '🧠 Zustand (store simple basado en hooks)',
+        globalStateReduxToolkitLabel: '🧰 Redux Toolkit (gestión de estado escalable)',
         languageSelectMessage: 'Selecciona el idioma para las preguntas interactivas:',
         languageOptionEnglish: 'Inglés',
         languageOptionPortuguese: 'Portugués',
         languageOptionSpanish: 'Español',
     },
 };
+function getProjectPromptTexts(language) {
+    return PROMPT_TEXTS[language];
+}
 async function askCliLanguage() {
     const languageAnswer = await inquirer_1.default.prompt([
         {
@@ -166,7 +185,7 @@ async function askProjectQuestions() {
                     choices.push({ name: '⚛️ React', value: 'react' }, { name: '⚡ Next.js', value: 'nextjs' }, { name: '🔷 Vue.js', value: 'vue' }, { name: '🎯 Nuxt.js', value: 'nuxt' }, { name: '📐 Angular', value: 'angular' }, { name: '🚀 Svelte', value: 'svelte' });
                 }
                 if (answers.type === 'mobile') {
-                    choices.push({ name: '📱 React Native', value: 'react-native' }, { name: 'Flutter Flutter', value: 'flutter' }, { name: '⚡ Ionic', value: 'ionic' }, { name: '🎯 NativeScript', value: 'nativescript' });
+                    choices.push({ name: '📱 React Native', value: 'react-native' }, { name: '🎯 Flutter', value: 'flutter' }, { name: '⚡ Ionic', value: 'ionic' }, { name: '🎯 NativeScript', value: 'nativescript' });
                 }
                 if (answers.type === 'desktop') {
                     choices.push({ name: '💻 Electron', value: 'electron' }, { name: '📦 Tauri', value: 'tauri' });
@@ -195,11 +214,13 @@ async function askProjectQuestions() {
                 const isReactEcosystem = ['react', 'nextjs', 'react-native'].includes(answers.framework);
                 return [
                     { name: '🎨 Tailwind CSS', value: 'tailwind' },
-                    ...(isReactEcosystem ? [
-                        { name: '💅 Styled Components', value: 'styled-components' },
-                        { name: '💖 Emotion', value: 'emotion' },
-                        { name: '🎭 Chakra UI', value: 'chakra-ui' },
-                    ] : []),
+                    ...(isReactEcosystem
+                        ? [
+                            { name: '💅 Styled Components', value: 'styled-components' },
+                            { name: '💖 Emotion', value: 'emotion' },
+                            { name: '🎭 Chakra UI', value: 'chakra-ui' },
+                        ]
+                        : []),
                     { name: '📜 SCSS/SASS', value: 'scss' },
                     { name: texts.cssPureLabel, value: 'css' },
                 ];
@@ -251,6 +272,27 @@ async function askProjectQuestions() {
         ]);
         auth = authAnswer.auth;
     }
+    // Global state library question (only when it makes sense)
+    let globalState;
+    const supportsGlobalState = answers.language === 'typescript' &&
+        ['web', 'fullstack'].includes(answers.type) &&
+        answers.framework === 'react';
+    if (supportsGlobalState) {
+        const globalStateAnswer = await inquirer_1.default.prompt([
+            {
+                type: 'list',
+                name: 'globalState',
+                message: texts.globalStateMessage,
+                choices: [
+                    { name: texts.globalStateNoneLabel, value: 'none' },
+                    { name: texts.globalStateZustandLabel, value: 'zustand' },
+                    { name: texts.globalStateReduxToolkitLabel, value: 'redux-toolkit' },
+                ],
+                default: 'none',
+            },
+        ]);
+        globalState = globalStateAnswer.globalState;
+    }
     // Features question
     const featuresAnswer = await inquirer_1.default.prompt([
         {
@@ -283,7 +325,10 @@ async function askProjectQuestions() {
             message: texts.pagesMessage,
             default: texts.pagesDefault,
             filter: (input) => {
-                return input.split(',').map((p) => p.trim()).filter((p) => p.length > 0);
+                return input
+                    .split(',')
+                    .map((p) => p.trim())
+                    .filter((p) => p.length > 0);
             },
         },
     ]);
@@ -295,8 +340,19 @@ async function askProjectQuestions() {
             message: texts.componentsMessage,
             default: texts.componentsDefault,
             filter: (input) => {
-                return input.split(',').map((c) => c.trim()).filter((c) => c.length > 0);
+                return input
+                    .split(',')
+                    .map((c) => c.trim())
+                    .filter((c) => c.length > 0);
             },
+        },
+    ]);
+    const localeAnswer = await inquirer_1.default.prompt([
+        {
+            type: 'input',
+            name: 'primaryLocale',
+            message: texts.localeMessage,
+            default: 'en-US',
         },
     ]);
     // Color palette questions
@@ -404,12 +460,14 @@ async function askProjectQuestions() {
         mainGoal: answers.mainGoal,
         database,
         auth,
+        globalState: globalState && globalState !== 'none' ? globalState : undefined,
         features: featuresAnswer.features,
         pages: pagesAnswer.pages,
         components: componentsAnswer.components,
         colorPalette,
         typography,
         cliLanguage,
+        primaryLocale: localeAnswer.primaryLocale,
     };
 }
 //# sourceMappingURL=project-prompts.js.map

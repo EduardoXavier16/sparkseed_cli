@@ -42,16 +42,35 @@ exports.fileExists = fileExists;
 exports.readJsonFile = readJsonFile;
 exports.writeJsonFile = writeJsonFile;
 const fs = __importStar(require("fs"));
-const path = __importStar(require("path"));
 const ora_1 = __importDefault(require("ora"));
-async function writeProjectToDisk(structure, baseDir, prdContent, designSystemContent) {
-    const spinner = (0, ora_1.default)('Criando estrutura do projeto...').start();
+const path = __importStar(require("path"));
+const FILE_WRITER_MESSAGES = {
+    en: {
+        creating: 'Creating project structure...',
+        success: 'Project successfully created!',
+        error: 'Error while creating project',
+    },
+    pt: {
+        creating: 'Criando estrutura do projeto...',
+        success: 'Projeto criado com sucesso!',
+        error: 'Erro ao criar projeto',
+    },
+    es: {
+        creating: 'Creando estructura del proyecto...',
+        success: 'Proyecto creado con éxito!',
+        error: 'Error al crear el proyecto',
+    },
+};
+async function writeProjectToDisk(structure, baseDir, prdContent, designSystemContent, language) {
+    const selectedLanguage = language ?? 'en';
+    const messages = FILE_WRITER_MESSAGES[selectedLanguage];
+    const spinner = (0, ora_1.default)(messages.creating).start();
     try {
         await writeStructure(structure, baseDir, prdContent, designSystemContent);
-        spinner.succeed('Projeto criado com sucesso!');
+        spinner.succeed(messages.success);
     }
     catch (error) {
-        spinner.fail('Erro ao criar projeto');
+        spinner.fail(messages.error);
         throw error;
     }
 }

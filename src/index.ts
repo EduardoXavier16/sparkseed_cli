@@ -4,12 +4,34 @@ import chalk from 'chalk';
 import { Command } from 'commander';
 import ora from 'ora';
 import * as path from 'path';
-import type { SupportedLanguage } from './types';
-import { formatDesignSystem, generateDesignSystem } from './generators/design-system-generator';
+import {
+  formatDesignSystem,
+  generateDesignSystem,
+} from './generators/design-system/design-system-generator';
 import { writeProjectToDisk } from './generators/file-writer';
-import { formatPRD, generatePRD } from './generators/prd-generator';
-import { generateProjectStructure } from './generators/project-structure';
+import { formatPRD, generatePRD } from './generators/prd/prd-generator';
+import { generateProjectStructure } from './generators/project-structure/builder';
 import { askProjectQuestions } from './prompts/project-prompts';
+import type { SupportedLanguage } from './types';
+import {
+  generateComponentTemplate,
+  generateComponentStyles,
+  generateComponentTest,
+  generatePageTemplate,
+  generatePageTest,
+} from './subgenerators/component-generator';
+import {
+  generateController,
+  generateService,
+  generateRoutes,
+  generateResourceTest,
+} from './subgenerators/resource-generator';
+import {
+  askComponentConfig,
+  askPageConfig,
+  askResourceConfig,
+} from './subgenerators/prompts';
+import { writeFilesToDisk, getProjectRoot } from './subgenerators/file-writer';
 
 interface ICliMessages {
   readonly generatingDocs: string;
@@ -101,6 +123,10 @@ const CLI_MESSAGES: Record<SupportedLanguage, ICliMessages> = {
 
 const program = new Command();
 
+const writeLine = (message: string): void => {
+  process.stdout.write(`${message}\n`);
+};
+
 program
   .name('sparkseed')
   .description('Interactive CLI to generate complete project boilerplates')
@@ -112,15 +138,19 @@ program
   .argument('[directory]', 'Directory where the project will be created', '.')
   .action(async (directory: string) => {
     try {
-      console.log(chalk.blue('\n🚀 Welcome to sparkseed!\n'));
-      console.log(chalk.gray('We will first ask you which language you prefer for the interactive questions.\n'));
+      writeLine(chalk.blue('\n🚀 Welcome to sparkseed!\n'));
+      writeLine(
+        chalk.gray(
+          'We will first ask you which language you prefer for the interactive questions.\n'
+        )
+      );
 
       // Ask questions
       const config = await askProjectQuestions();
       const language: SupportedLanguage = config.cliLanguage ?? 'en';
       const messages = CLI_MESSAGES[language];
 
-      console.log(chalk.blue(messages.generatingDocs));
+      writeLine(chalk.blue(messages.generatingDocs));
 
       // Generate PRD
       const prdSpinner = ora(messages.prdStart).start();
@@ -144,22 +174,22 @@ program
       await writeProjectToDisk(structure, targetDir, prdMarkdown, dsMarkdown, config.cliLanguage);
 
       // Summary
-      console.log(chalk.green(messages.summaryTitle));
-      console.log(chalk.gray(messages.structureAtLabel), chalk.cyan(targetDir));
-      console.log(messages.generatedDocsTitle);
-      console.log(chalk.gray(messages.docPrd));
-      console.log(chalk.gray(messages.docDesignSystem));
-      console.log(chalk.gray(messages.docArchitecture));
+      writeLine(chalk.green(messages.summaryTitle));
+      writeLine(`${chalk.gray(messages.structureAtLabel)} ${chalk.cyan(targetDir)}`);
+      writeLine(messages.generatedDocsTitle);
+      writeLine(chalk.gray(messages.docPrd));
+      writeLine(chalk.gray(messages.docDesignSystem));
+      writeLine(chalk.gray(messages.docArchitecture));
       if (config.type === 'fullstack' || config.type === 'api') {
-        console.log(chalk.gray(messages.docApi));
+        writeLine(chalk.gray(messages.docApi));
       }
 
-      console.log(messages.nextStepsTitle);
-      console.log(chalk.gray(`${messages.stepCdPrefix}${directory}`));
-      console.log(chalk.gray(messages.stepInstall));
-      console.log(chalk.gray(messages.stepDev));
+      writeLine(messages.nextStepsTitle);
+      writeLine(chalk.gray(`${messages.stepCdPrefix}${directory}`));
+      writeLine(chalk.gray(messages.stepInstall));
+      writeLine(chalk.gray(messages.stepDev));
 
-      console.log(chalk.blue(messages.docsHint));
+      writeLine(chalk.blue(messages.docsHint));
     } catch (error) {
       console.error(chalk.red('\n❌ Error while creating project:'));
       console.error(error instanceof Error ? error.message : error);

@@ -1,9 +1,5 @@
-import { ProjectConfig } from '../types';
-export interface ProjectStructure {
-    name: string;
-    type: 'file' | 'folder';
-    content?: string;
-    children?: ProjectStructure[];
-}
+import type { ProjectConfig } from '../types';
+import type { ProjectStructure } from './project-structure/types';
+export type { ProjectStructure };
 export declare function generateProjectStructure(config: ProjectConfig): ProjectStructure;
 //# sourceMappingURL=project-structure.d.ts.map

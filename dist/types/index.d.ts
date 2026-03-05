@@ -1,4 +1,5 @@
 export type SupportedLanguage = 'en' | 'pt' | 'es';
+export type GlobalStateLibrary = 'zustand' | 'redux-toolkit';
 export interface ProjectConfig {
     projectName: string;
     description: string;
@@ -6,6 +7,7 @@ export interface ProjectConfig {
     framework: string;
     language: 'typescript' | 'javascript';
     styling: 'css' | 'scss' | 'tailwind' | 'styled-components' | 'emotion' | 'chakra-ui';
+    globalState?: GlobalStateLibrary;
     database?: string;
     auth?: boolean;
     features: string[];
@@ -16,6 +18,7 @@ export interface ProjectConfig {
     components: string[];
     pages: string[];
     cliLanguage?: SupportedLanguage;
+    primaryLocale?: string;
     apiEndpoints?: ApiEndpoint[];
 }
 export interface ColorPalette {

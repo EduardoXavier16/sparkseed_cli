@@ -9,7 +9,7 @@ export interface ProjectConfig {
   framework: string;
   language: 'typescript' | 'javascript';
   styling: 'css' | 'scss' | 'tailwind' | 'styled-components' | 'emotion' | 'chakra-ui';
-   globalState?: GlobalStateLibrary;
+  globalState?: GlobalStateLibrary;
   database?: string;
   auth?: boolean;
   features: string[];
@@ -20,6 +20,7 @@ export interface ProjectConfig {
   components: string[];
   pages: string[];
   cliLanguage?: SupportedLanguage;
+  primaryLocale?: string;
   apiEndpoints?: ApiEndpoint[];
 }
 

@@ -1,5 +1,11 @@
 import inquirer from 'inquirer';
-import { ColorPalette, GlobalStateLibrary, ProjectConfig, SupportedLanguage, Typography } from '../types';
+import {
+  ColorPalette,
+  GlobalStateLibrary,
+  ProjectConfig,
+  SupportedLanguage,
+  Typography,
+} from '../types';
 
 interface Answers {
   projectName: string;
@@ -34,6 +40,7 @@ interface IProjectPromptTexts {
   readonly pagesDefault: string;
   readonly componentsMessage: string;
   readonly componentsDefault: string;
+  readonly localeMessage: string;
   readonly primaryColorMessage: string;
   readonly secondaryColorMessage: string;
   readonly accentColorMessage: string;
@@ -64,7 +71,8 @@ const PROMPT_TEXTS: Record<SupportedLanguage, IProjectPromptTexts> = {
     targetAudienceMessage: 'What is the target audience of this project?',
     targetAudienceDefault: 'General users looking for an efficient and intuitive solution',
     mainGoalMessage: 'What is the main goal of this project?',
-    mainGoalDefault: 'Provide an exceptional user experience while solving the core problem efficiently',
+    mainGoalDefault:
+      'Provide an exceptional user experience while solving the core problem efficiently',
     databaseMessage: 'Which database do you want to use?',
     noDatabaseLabel: '❌ No database',
     authMessage: 'Do you want to include an authentication system?',
@@ -73,6 +81,7 @@ const PROMPT_TEXTS: Record<SupportedLanguage, IProjectPromptTexts> = {
     pagesDefault: 'Home, About, Contact, Login, Dashboard',
     componentsMessage: 'Which common components do you need? (separate with commas)',
     componentsDefault: 'Button, Input, Card, Modal, Navbar, Sidebar, Table, Form',
+    localeMessage: 'What is the primary locale for formatting (e.g. en-US, pt-BR, es-ES)?',
     primaryColorMessage: 'Primary color (hex or name):',
     secondaryColorMessage: 'Secondary color (hex or name):',
     accentColorMessage: 'Accent color (hex or name):',
@@ -101,7 +110,8 @@ const PROMPT_TEXTS: Record<SupportedLanguage, IProjectPromptTexts> = {
     targetAudienceMessage: 'Qual é o público-alvo deste projeto?',
     targetAudienceDefault: 'Usuários em geral buscando uma solução eficiente e intuitiva',
     mainGoalMessage: 'Qual é o principal objetivo deste projeto?',
-    mainGoalDefault: 'Proporcionar uma experiência excepcional enquanto resolve o problema principal de forma eficiente',
+    mainGoalDefault:
+      'Proporcionar uma experiência excepcional enquanto resolve o problema principal de forma eficiente',
     databaseMessage: 'Qual banco de dados você quer usar?',
     noDatabaseLabel: '❌ Sem banco de dados',
     authMessage: 'Você quer incluir um sistema de autenticação?',
@@ -110,6 +120,7 @@ const PROMPT_TEXTS: Record<SupportedLanguage, IProjectPromptTexts> = {
     pagesDefault: 'Home, Sobre, Contato, Login, Dashboard',
     componentsMessage: 'Quais componentes comuns você precisa? (separe com vírgulas)',
     componentsDefault: 'Button, Input, Card, Modal, Navbar, Sidebar, Table, Form',
+    localeMessage: 'Qual é o locale principal para formatação (ex.: en-US, pt-BR, es-ES)?',
     primaryColorMessage: 'Cor primária (hex ou nome):',
     secondaryColorMessage: 'Cor secundária (hex ou nome):',
     accentColorMessage: 'Cor de destaque (hex ou nome):',
@@ -138,7 +149,8 @@ const PROMPT_TEXTS: Record<SupportedLanguage, IProjectPromptTexts> = {
     targetAudienceMessage: '¿Cuál es el público objetivo de este proyecto?',
     targetAudienceDefault: 'Usuarios en general que buscan una solución eficiente e intuitiva',
     mainGoalMessage: '¿Cuál es el objetivo principal de este proyecto?',
-    mainGoalDefault: 'Proporcionar una experiencia excepcional mientras resuelve el problema principal de forma eficiente',
+    mainGoalDefault:
+      'Proporcionar una experiencia excepcional mientras resuelve el problema principal de forma eficiente',
     databaseMessage: '¿Qué base de datos quieres usar?',
     noDatabaseLabel: '❌ Sin base de datos',
     authMessage: '¿Quieres incluir un sistema de autenticación?',
@@ -147,6 +159,7 @@ const PROMPT_TEXTS: Record<SupportedLanguage, IProjectPromptTexts> = {
     pagesDefault: 'Home, Acerca de, Contacto, Login, Dashboard',
     componentsMessage: '¿Qué componentes comunes necesitas? (separa con comas)',
     componentsDefault: 'Button, Input, Card, Modal, Navbar, Sidebar, Table, Form',
+    localeMessage: '¿Cuál es el locale principal para formato (ej.: en-US, pt-BR, es-ES)?',
     primaryColorMessage: 'Color primario (hex o nombre):',
     secondaryColorMessage: 'Color secundario (hex o nombre):',
     accentColorMessage: 'Color de acento (hex o nombre):',
@@ -163,6 +176,10 @@ const PROMPT_TEXTS: Record<SupportedLanguage, IProjectPromptTexts> = {
     languageOptionSpanish: 'Español',
   },
 };
+
+export function getProjectPromptTexts(language: SupportedLanguage): IProjectPromptTexts {
+  return PROMPT_TEXTS[language];
+}
 
 async function askCliLanguage(): Promise<SupportedLanguage> {
   const languageAnswer = await inquirer.prompt<{ cliLanguage: SupportedLanguage }>([
@@ -222,7 +239,7 @@ export async function askProjectQuestions(): Promise<ProjectConfig> {
       message: texts.frameworkMessage,
       choices: (answers: { type: string }) => {
         const choices = [];
-        
+
         if (['web', 'fullstack'].includes(answers.type)) {
           choices.push(
             { name: '⚛️ React', value: 'react' },
@@ -233,23 +250,23 @@ export async function askProjectQuestions(): Promise<ProjectConfig> {
             { name: '🚀 Svelte', value: 'svelte' }
           );
         }
-        
+
         if (answers.type === 'mobile') {
           choices.push(
             { name: '📱 React Native', value: 'react-native' },
-            { name: 'Flutter Flutter', value: 'flutter' },
+            { name: '🎯 Flutter', value: 'flutter' },
             { name: '⚡ Ionic', value: 'ionic' },
             { name: '🎯 NativeScript', value: 'nativescript' }
           );
         }
-        
+
         if (answers.type === 'desktop') {
           choices.push(
             { name: '💻 Electron', value: 'electron' },
             { name: '📦 Tauri', value: 'tauri' }
           );
         }
-        
+
         if (['api', 'fullstack'].includes(answers.type)) {
           choices.push(
             { name: '🟢 Node.js + Express', value: 'express' },
@@ -260,7 +277,7 @@ export async function askProjectQuestions(): Promise<ProjectConfig> {
             { name: '🦀 Rust + Actix', value: 'actix' }
           );
         }
-        
+
         return choices.length > 0 ? choices : [{ name: 'Vanilla', value: 'vanilla' }];
       },
     },
@@ -280,14 +297,16 @@ export async function askProjectQuestions(): Promise<ProjectConfig> {
       message: texts.stylingMessage,
       choices: (answers: { framework: string }) => {
         const isReactEcosystem = ['react', 'nextjs', 'react-native'].includes(answers.framework);
-        
+
         return [
           { name: '🎨 Tailwind CSS', value: 'tailwind' },
-          ...(isReactEcosystem ? [
-            { name: '💅 Styled Components', value: 'styled-components' },
-            { name: '💖 Emotion', value: 'emotion' },
-            { name: '🎭 Chakra UI', value: 'chakra-ui' },
-          ] : []),
+          ...(isReactEcosystem
+            ? [
+                { name: '💅 Styled Components', value: 'styled-components' },
+                { name: '💖 Emotion', value: 'emotion' },
+                { name: '🎭 Chakra UI', value: 'chakra-ui' },
+              ]
+            : []),
           { name: '📜 SCSS/SASS', value: 'scss' },
           { name: texts.cssPureLabel, value: 'css' },
         ];
@@ -374,7 +393,7 @@ export async function askProjectQuestions(): Promise<ProjectConfig> {
     {
       type: 'checkbox',
       name: 'features',
-        message: texts.featuresMessage,
+      message: texts.featuresMessage,
       choices: [
         { name: '👤 User authentication', value: 'auth', checked: auth },
         { name: '📧 Email sending', value: 'email' },
@@ -399,10 +418,13 @@ export async function askProjectQuestions(): Promise<ProjectConfig> {
     {
       type: 'input',
       name: 'pages',
-        message: texts.pagesMessage,
-        default: texts.pagesDefault,
+      message: texts.pagesMessage,
+      default: texts.pagesDefault,
       filter: (input: string) => {
-        return input.split(',').map((p: string) => p.trim()).filter((p: string) => p.length > 0);
+        return input
+          .split(',')
+          .map((p: string) => p.trim())
+          .filter((p: string) => p.length > 0);
       },
     },
   ]);
@@ -412,11 +434,23 @@ export async function askProjectQuestions(): Promise<ProjectConfig> {
     {
       type: 'input',
       name: 'components',
-        message: texts.componentsMessage,
-        default: texts.componentsDefault,
+      message: texts.componentsMessage,
+      default: texts.componentsDefault,
       filter: (input: string) => {
-        return input.split(',').map((c: string) => c.trim()).filter((c: string) => c.length > 0);
+        return input
+          .split(',')
+          .map((c: string) => c.trim())
+          .filter((c: string) => c.length > 0);
       },
+    },
+  ]);
+
+  const localeAnswer = await inquirer.prompt<{ primaryLocale: string }>([
+    {
+      type: 'input',
+      name: 'primaryLocale',
+      message: texts.localeMessage,
+      default: 'en-US',
     },
   ]);
 
@@ -536,5 +570,6 @@ export async function askProjectQuestions(): Promise<ProjectConfig> {
     colorPalette,
     typography,
     cliLanguage,
+    primaryLocale: localeAnswer.primaryLocale,
   };
 }
