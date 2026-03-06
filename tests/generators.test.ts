@@ -257,7 +257,13 @@ describe('Project Structure Generator', () => {
     expect(childNames).toContain('backend');
     expect(childNames).toContain('docs');
 
-    const dockerComposeFile = (structure.children ?? []).find(
+    const dockerComposeFolder = (structure.children ?? []).find(
+      (child) => child.name === 'docker-compose'
+    );
+
+    expect(dockerComposeFolder).toBeDefined();
+    
+    const dockerComposeFile = dockerComposeFolder?.children?.find(
       (child) => child.name === 'docker-compose.yml'
     );
 

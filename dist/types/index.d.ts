@@ -1,5 +1,55 @@
 export type SupportedLanguage = 'en' | 'pt' | 'es';
 export type GlobalStateLibrary = 'zustand' | 'redux-toolkit';
+export interface DomainEntity {
+    name: string;
+    description: string;
+    fields: EntityField[];
+    relationships?: EntityRelationship[];
+}
+export interface EntityField {
+    name: string;
+    type: 'string' | 'number' | 'boolean' | 'date' | 'email' | 'text' | 'json';
+    required: boolean;
+    unique?: boolean;
+    description?: string;
+}
+export interface EntityRelationship {
+    entity: string;
+    type: 'one-to-many' | 'many-to-many' | 'one-to-one';
+    description?: string;
+}
+export interface UserJourney {
+    name: string;
+    description: string;
+    steps: JourneyStep[];
+    preConditions?: string[];
+    postConditions?: string[];
+}
+export interface JourneyStep {
+    order: number;
+    action: string;
+    screen?: string;
+    apiEndpoint?: string;
+    description?: string;
+}
+export interface ScreenMap {
+    name: string;
+    route: string;
+    description: string;
+    parentScreen?: string;
+    components?: string[];
+}
+export interface UserRole {
+    name: string;
+    description: string;
+    permissions: string[];
+}
+export interface Workflow {
+    name: string;
+    description: string;
+    statuses: string[];
+    transitions: string[];
+}
 export interface ProjectConfig {
     projectName: string;
     description: string;
@@ -9,6 +59,7 @@ export interface ProjectConfig {
     styling: 'css' | 'scss' | 'tailwind' | 'styled-components' | 'emotion' | 'chakra-ui';
     globalState?: GlobalStateLibrary;
     database?: string;
+    orm?: 'prisma' | 'drizzle' | 'sequelize' | 'typeorm' | 'mongoose' | 'knex';
     auth?: boolean;
     features: string[];
     targetAudience: string;
@@ -20,6 +71,13 @@ export interface ProjectConfig {
     cliLanguage?: SupportedLanguage;
     primaryLocale?: string;
     apiEndpoints?: ApiEndpoint[];
+    domainEntities?: DomainEntity[];
+    userJourneys?: UserJourney[];
+    screenMap?: ScreenMap[];
+    businessContext?: string;
+    userRoles?: UserRole[];
+    workflows?: Workflow[];
+    agentGuidance?: string;
 }
 export interface ColorPalette {
     primary: string;

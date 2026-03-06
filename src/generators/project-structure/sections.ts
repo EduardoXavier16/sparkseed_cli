@@ -1,6 +1,8 @@
 import type { ProjectConfig, ProjectStructure } from './types';
 
 import {
+  generateAccessibilityDoc,
+  generateAgentGuide,
   generateApiDoc,
   generateApiService,
   generateArchitectureDoc,
@@ -11,13 +13,17 @@ import {
   generateAuthService,
   generateAuthServiceBackend,
   generateBackendAppFile,
+  generateBackendAuthServiceUnitTest,
   generateBackendBiomeConfig,
   generateBackendConfigFile,
   generateBackendEnvExample,
   generateBackendGitignore,
+  generateBackendHealthRouteIntegrationTest,
   generateBackendIndexFile,
   generateBackendPackageJson,
   generateBackendTsConfig,
+  generateBackendUserServiceUnitTest,
+  generateBackendVitestConfig,
   generateBiomeConfig,
   generateCnUtility,
   generateComponentStyles,
@@ -26,27 +32,48 @@ import {
   generateCssVariables,
   generateDatabaseIndexFile,
   generateDockerCompose,
+  generateDomainModelDoc,
+  generateDrizzleIndex,
+  generateDrizzleSchema,
   generateEnvExample,
   generateErrorMiddlewareFile,
   generateEslintConfig,
   generateFormatUtility,
+  generateGitHubActionsWorkflow,
   generateGitignore,
   generateGlobalStyles,
   generateHttpErrorFile,
   generateIndexHtml,
+  generateKnexConfig,
   generateLoggerFile,
   generateMainFile,
+  generateMongooseModels,
   generateNodeTsConfig,
+  generateOpenAPISpec,
   generatePackageJson,
   generatePageTemplate,
+  generatePlaywrightAuthSpec,
+  generatePlaywrightConfig,
+  generatePlaywrightNavigationSpec,
   generatePrettierConfig,
   generatePrismaSchema,
+  generateQaGuide,
   generateReadme,
+  generateRedisConfig,
+  generateRedisDockerCompose,
   generateReduxHooks,
   generateReduxStore,
+  generateReleaseChecklist,
+  generateRobotsTxt,
   generateRoutesIndexFile,
+  generateScreensMapDoc,
+  generateSequelizeIndex,
+  generateSequelizeModels,
+  generateSitemapXml,
+  generateSupabaseClient,
   generateThemeContext,
   generateTsConfig,
+  generateTypeORMConfig,
   generateTypesIndex,
   generateUseAuthHook,
   generateUserControllerFile,
@@ -54,8 +81,9 @@ import {
   generateUserServiceBackend,
   generateUseThemeHook,
   generateViteConfig,
+  generateVitestConfig,
   generateZustandStore,
-} from './templates';
+} from '../../templates';
 
 export function buildFrontendStructure(
   config: ProjectConfig,
@@ -78,12 +106,17 @@ export function buildFrontendStructure(
     {
       name: 'tsconfig.json',
       type: 'file',
-      content: generateTsConfig(config),
+      content: generateTsConfig(),
     },
     {
       name: 'tsconfig.node.json',
       type: 'file',
       content: generateNodeTsConfig(),
+    },
+    {
+      name: 'vitest.config.ts',
+      type: 'file',
+      content: generateVitestConfig(config),
     },
     {
       name: '.eslintrc.cjs',
@@ -119,13 +152,63 @@ export function buildFrontendStructure(
 
   if (!isNextJs) {
     children.push(
-      buildPublicFolder(),
+      buildPublicFolder(config),
       buildIndexHtmlFile(config),
       buildViteConfigFile(config, configExtension)
     );
   }
 
   children.push(buildBiomeConfig());
+
+  const testsFolder: ProjectStructure = {
+    name: 'tests',
+    type: 'folder',
+    children: [
+      {
+        name: 'e2e',
+        type: 'folder',
+        children: [
+          {
+            name: 'auth.spec.ts',
+            type: 'file',
+            content: generatePlaywrightAuthSpec(),
+          },
+          {
+            name: 'navigation.spec.ts',
+            type: 'file',
+            content: generatePlaywrightNavigationSpec(),
+          },
+        ],
+      },
+    ],
+  };
+
+  children.push({
+    name: 'playwright.config.ts',
+    type: 'file',
+    content: generatePlaywrightConfig(config),
+  });
+
+  children.push(testsFolder);
+
+  // Add .github/workflows for CI/CD
+  children.push({
+    name: '.github',
+    type: 'folder',
+    children: [
+      {
+        name: 'workflows',
+        type: 'folder',
+        children: [
+          {
+            name: 'ci-cd.yml',
+            type: 'file',
+            content: generateGitHubActionsWorkflow(config),
+          },
+        ],
+      },
+    ],
+  });
 
   return {
     name: 'frontend',
@@ -154,7 +237,12 @@ export function buildBackendStructure(
     {
       name: 'tsconfig.json',
       type: 'file',
-      content: generateBackendTsConfig(config),
+      content: generateBackendTsConfig(),
+    },
+    {
+      name: 'vitest.config.ts',
+      type: 'file',
+      content: generateBackendVitestConfig(),
     },
     {
       name: '.env.example',
@@ -176,6 +264,27 @@ export function buildBackendStructure(
     buildBackendBiomeConfig()
   );
 
+  // Add .github/workflows for CI/CD (backend only projects)
+  if (!['fullstack', 'web'].includes(config.type)) {
+    children.push({
+      name: '.github',
+      type: 'folder',
+      children: [
+        {
+          name: 'workflows',
+          type: 'folder',
+          children: [
+            {
+              name: 'ci-cd.yml',
+              type: 'file',
+              content: generateGitHubActionsWorkflow(config),
+            },
+          ],
+        },
+      ],
+    });
+  }
+
   return {
     name: 'backend',
     type: 'folder',
@@ -184,6 +293,9 @@ export function buildBackendStructure(
 }
 
 export function buildDocsStructure(config: ProjectConfig, hasBackend: boolean): ProjectStructure {
+  const features = config.features || [];
+  const hasOpenAPI = hasBackend && (features.includes('docs') || features.includes('api'));
+
   return {
     name: 'docs',
     type: 'folder',
@@ -196,10 +308,55 @@ export function buildDocsStructure(config: ProjectConfig, hasBackend: boolean): 
         content: generateArchitectureDoc(config),
       },
       {
+        name: 'QA_GUIDE.md',
+        type: 'file',
+        content: generateQaGuide(config),
+      },
+      {
         name: 'API.md',
         type: 'file',
         content: hasBackend ? generateApiDoc(config) : undefined,
       },
+      {
+        name: 'ACCESSIBILITY.md',
+        type: 'file',
+        content: generateAccessibilityDoc(config),
+      },
+      {
+        name: 'AGENT_GUIDE.md',
+        type: 'file',
+        content: generateAgentGuide(config),
+      },
+      {
+        name: 'RELEASE_CHECKLIST.md',
+        type: 'file',
+        content: generateReleaseChecklist(config),
+      },
+      {
+        name: 'DOMAIN_MODEL.md',
+        type: 'file',
+        content:
+          config.domainEntities && config.domainEntities.length > 0
+            ? generateDomainModelDoc(config)
+            : undefined,
+      },
+      {
+        name: 'SCREENS_MAP.md',
+        type: 'file',
+        content:
+          config.screenMap && config.screenMap.length > 0
+            ? generateScreensMapDoc(config)
+            : undefined,
+      },
+      ...(hasOpenAPI
+        ? [
+            {
+              name: 'openapi.json',
+              type: 'file' as const,
+              content: generateOpenAPISpec(config),
+            },
+          ]
+        : []),
     ],
   };
 }
@@ -210,11 +367,28 @@ export function buildDockerCompose(config: ProjectConfig): ProjectStructure | nu
   }
 
   const content = generateDockerCompose(config);
+  const features = config.features || [];
+  const children: ProjectStructure[] = [
+    {
+      name: 'docker-compose.yml',
+      type: 'file',
+      content,
+    },
+  ];
+
+  // Add Redis if cache or session feature is enabled
+  if (features.includes('cache') || features.includes('session') || features.includes('redis')) {
+    children.push({
+      name: 'docker-compose.redis.yml',
+      type: 'file',
+      content: generateRedisDockerCompose(),
+    });
+  }
 
   return {
-    name: 'docker-compose.yml',
-    type: 'file',
-    content,
+    name: 'docker-compose',
+    type: 'folder',
+    children,
   };
 }
 
@@ -351,21 +525,23 @@ function buildContextFolder(extension: string): ProjectStructure {
 }
 
 function buildServicesFolder(extension: string): ProjectStructure {
+  const children: ProjectStructure[] = [
+    {
+      name: `api.${extension}`,
+      type: 'file',
+      content: generateApiService(),
+    },
+    {
+      name: `auth.${extension}`,
+      type: 'file',
+      content: generateAuthService(),
+    },
+  ];
+
   return {
     name: 'services',
     type: 'folder',
-    children: [
-      {
-        name: `api.${extension}`,
-        type: 'file',
-        content: generateApiService(),
-      },
-      {
-        name: `auth.${extension}`,
-        type: 'file',
-        content: generateAuthService(),
-      },
-    ],
+    children,
   };
 }
 
@@ -490,13 +666,22 @@ function buildStoreFolder(config: ProjectConfig, extension: string): ProjectStru
   };
 }
 
-function buildPublicFolder(): ProjectStructure {
+function buildPublicFolder(config: ProjectConfig): ProjectStructure {
   return {
     name: 'public',
     type: 'folder',
     children: [
       { name: 'favicon.ico', type: 'file' },
-      { name: 'robots.txt', type: 'file', content: 'User-agent: *\nAllow: /\n' },
+      {
+        name: 'robots.txt',
+        type: 'file',
+        content: generateRobotsTxt(),
+      },
+      {
+        name: 'sitemap.xml',
+        type: 'file',
+        content: generateSitemapXml(config),
+      },
     ],
   };
 }
@@ -551,6 +736,38 @@ function buildBackendSrcFolder(config: ProjectConfig, extension: string): Projec
 
   if (config.database) {
     srcChildren.push(buildDatabaseFolder(config, extension));
+  }
+
+  // Add lib folder with Redis and/or Supabase configs
+  const features = config.features || [];
+  const hasRedis =
+    features.includes('cache') || features.includes('session') || features.includes('redis');
+  const hasSupabase = features.includes('supabase') || config.database === 'supabase';
+
+  if (hasRedis || hasSupabase) {
+    const libChildren: ProjectStructure[] = [];
+
+    if (hasRedis) {
+      libChildren.push({
+        name: `redis.${extension}`,
+        type: 'file',
+        content: generateRedisConfig(config),
+      });
+    }
+
+    if (hasSupabase) {
+      libChildren.push({
+        name: `supabase.${extension}`,
+        type: 'file',
+        content: generateSupabaseClient(config),
+      });
+    }
+
+    srcChildren.push({
+      name: 'lib',
+      type: 'folder',
+      children: libChildren,
+    });
   }
 
   return {
@@ -611,7 +828,7 @@ function buildBackendServicesFolder(config: ProjectConfig, extension: string): P
       {
         name: `auth.service.${extension}`,
         type: 'file',
-        content: generateAuthServiceBackend(config),
+        content: generateAuthServiceBackend(),
       },
       {
         name: `user.service.${extension}`,
@@ -661,10 +878,12 @@ function buildBackendUtilsFolder(extension: string): ProjectStructure {
 }
 
 function buildDatabaseFolder(config: ProjectConfig, extension: string): ProjectStructure {
-  return {
-    name: 'database',
-    type: 'folder',
-    children: [
+  const orm = config.orm || 'prisma';
+
+  const children: ProjectStructure[] = [];
+
+  if (orm === 'prisma') {
+    children.push(
       {
         name: 'schema.prisma',
         type: 'file',
@@ -674,8 +893,79 @@ function buildDatabaseFolder(config: ProjectConfig, extension: string): ProjectS
         name: `index.${extension}`,
         type: 'file',
         content: generateDatabaseIndexFile(),
+      }
+    );
+  } else if (orm === 'drizzle') {
+    children.push(
+      {
+        name: `schema.${extension}`,
+        type: 'file',
+        content: generateDrizzleSchema(config),
       },
-    ],
+      {
+        name: `index.${extension}`,
+        type: 'file',
+        content: generateDrizzleIndex(config),
+      }
+    );
+  } else if (orm === 'sequelize') {
+    children.push(
+      {
+        name: `index.${extension}`,
+        type: 'file',
+        content: generateSequelizeIndex(config),
+      },
+      {
+        name: `models.${extension}`,
+        type: 'file',
+        content: generateSequelizeModels(config),
+      }
+    );
+  } else if (orm === 'typeorm') {
+    children.push(
+      {
+        name: `data-source.${extension}`,
+        type: 'file',
+        content: generateTypeORMConfig(config),
+      },
+      {
+        name: `index.${extension}`,
+        type: 'file',
+        content: generateDatabaseIndexFile(),
+      }
+    );
+  } else if (orm === 'mongoose') {
+    children.push(
+      {
+        name: `models.${extension}`,
+        type: 'file',
+        content: generateMongooseModels(config),
+      },
+      {
+        name: `index.${extension}`,
+        type: 'file',
+        content: generateDatabaseIndexFile(),
+      }
+    );
+  } else if (orm === 'knex') {
+    children.push(
+      {
+        name: `knexfile.${extension}`,
+        type: 'file',
+        content: generateKnexConfig(config),
+      },
+      {
+        name: `index.${extension}`,
+        type: 'file',
+        content: generateDatabaseIndexFile(),
+      }
+    );
+  }
+
+  return {
+    name: 'database',
+    type: 'folder',
+    children,
   };
 }
 
@@ -687,12 +977,29 @@ function buildBackendTestsFolder(): ProjectStructure {
       {
         name: 'unit',
         type: 'folder',
-        children: [{ name: '.gitkeep', type: 'file' }],
+        children: [
+          {
+            name: 'auth.service.test.ts',
+            type: 'file',
+            content: generateBackendAuthServiceUnitTest(),
+          },
+          {
+            name: 'user.service.test.ts',
+            type: 'file',
+            content: generateBackendUserServiceUnitTest(),
+          },
+        ],
       },
       {
         name: 'integration',
         type: 'folder',
-        children: [{ name: '.gitkeep', type: 'file' }],
+        children: [
+          {
+            name: 'health-route.test.ts',
+            type: 'file',
+            content: generateBackendHealthRouteIntegrationTest(),
+          },
+        ],
       },
     ],
   };

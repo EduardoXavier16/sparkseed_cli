@@ -10,16 +10,52 @@ import {
 
 export function generatePRD(config: ProjectConfig): PRD {
   const userPersonas: UserPersona[] = buildUserPersonas();
-  const userStories: UserStory[] = buildUserStories();
-  const functionalRequirements: FunctionalRequirement[] = buildFunctionalRequirements();
+  const userStories: UserStory[] = buildUserStories(config);
+  const functionalRequirements: FunctionalRequirement[] = buildFunctionalRequirements(config);
   const nonFunctionalRequirements: string[] = buildNonFunctionalRequirements();
   const technicalStack: TechnicalStack = buildTechnicalStack(config);
   const milestones: Milestone[] = buildMilestones();
   const successMetrics: string[] = buildSuccessMetrics();
+  
+  // Build AI guidance section
+  const aiGuidanceSection = config.agentGuidance 
+    ? `\n\n## 🤖 Para o Agente de IA\n\n${config.agentGuidance}\n\n### ⚠️ Importante: Extensões Necessárias\n\nEste PRD define a estrutura BASE. Um agente de IA DEVE:\n\n1. **Expandir as entidades** conforme o contexto de negócio específico\n2. **Adicionar campos** necessários para as regras de negócio\n3. **Criar novos endpoints** não documentados aqui\n4. **Implementar validações** específicas do domínio\n\n${config.businessContext ? `\n**Contexto de Negócio:**\n${config.businessContext}\n` : ''}
+${config.userRoles && config.userRoles.length > 0 ? `\n**Papéis de Usuário Definidos:**\n${config.userRoles.map((role, idx) => `${idx + 1}. **${role.name}** - ${role.description}\n   - Permissões: ${role.permissions.join(', ') || 'não definidas'}`).join('\n')}\n` : ''}
+${config.workflows && config.workflows.length > 0 ? `\n**Workflows de Negócio:**\n${config.workflows.map((workflow, idx) => `${idx + 1}. **${workflow.name}** - ${workflow.description}\n   - Status: ${workflow.statuses.join(' → ')}\n   - Transições: ${workflow.transitions.join(', ')}`).join('\n')}\n` : ''}
+### 📋 Checklist para o Agente
+
+Antes de começar a implementar, o agente deve:
+
+- [ ] Ler e entender o DOMAIN_MODEL.md completo
+- [ ] Ler e entender o API.md completo  
+- [ ] Ler e entender o SCREEN_MAP.md completo
+- [ ] Identificar entidades/campos faltantes para o domínio específico
+- [ ] Documentar extensões propostas antes de implementar
+- [ ] Validar regras de negócio com o DOMAIN_MODEL.md
+- [ ] Seguir padrões de código do AGENT_GUIDE.md
+
+**NUNCA invente:**
+- Entidades não documentadas sem justificativa
+- Campos sem descrição no domínio
+- Endpoints sem especificação no API.md
+- Regras de negócio não validadas
+` 
+    : '';
+  
+  const userJourneysSection = config.userJourneys && config.userJourneys.length > 0
+    ? '\n\n## User Journeys\n\n' + config.userJourneys.map((journey, idx) => {
+        const steps = journey.steps.map((step, stepIdx) => 
+          `   ${stepIdx + 1}. **${step.action}**${step.screen ? ` (Screen: ${step.screen})` : ''}${step.description ? ` - ${step.description}` : ''}`
+        ).join('\n');
+        const preConds = journey.preConditions?.length ? `\n\n**Pre-conditions:**\n${journey.preConditions.map(c => `- ${c}`).join('\n')}` : '';
+        const postConds = journey.postConditions?.length ? `\n\n**Post-conditions:**\n${journey.postConditions.map(c => `- ${c}`).join('\n')}` : '';
+        return `### ${idx + 1}. ${journey.name}\n\n${journey.description}${preConds}\n\n**Steps:**\n${steps}${postConds}\n`;
+      }).join('\n')
+    : '';
 
   const overview = `The project **${config.projectName}** is ${config.description.toLowerCase()}.
 This document describes the product requirements, features, user personas,
-user stories, technical requirements and success metrics to guide development.`;
+user stories, user journeys, technical requirements and success metrics to guide development.${userJourneysSection}${aiGuidanceSection}`;
 
   return {
     overview,
@@ -84,8 +120,8 @@ function buildUserPersonas(): UserPersona[] {
   ];
 }
 
-function buildUserStories(): UserStory[] {
-  return [
+function buildUserStories(config: ProjectConfig): UserStory[] {
+  const baseStories: UserStory[] = [
     {
       id: 'US001',
       title: 'User registration',
@@ -148,10 +184,27 @@ function buildUserStories(): UserStory[] {
       priority: 'medium',
     },
   ];
+
+  // Add user stories from configured user journeys
+  if (config.userJourneys && config.userJourneys.length > 0) {
+    config.userJourneys.forEach((journey, idx) => {
+      baseStories.push({
+        id: `US${String(100 + idx + 1)}`,
+        title: journey.name,
+        description: `As a user, I want to ${journey.description.toLowerCase()} so I can achieve my goal`,
+        acceptanceCriteria: journey.steps.map((step) => 
+          `The system allows the user to: ${step.action}${step.screen ? ` on ${step.screen}` : ''}`
+        ),
+        priority: 'high',
+      });
+    });
+  }
+
+  return baseStories;
 }
 
-function buildFunctionalRequirements(): FunctionalRequirement[] {
-  return [
+function buildFunctionalRequirements(config: ProjectConfig): FunctionalRequirement[] {
+  const baseRequirements: FunctionalRequirement[] = [
     {
       id: 'FR001',
       title: 'Authentication system',
@@ -202,6 +255,20 @@ function buildFunctionalRequirements(): FunctionalRequirement[] {
       priority: 'high',
     },
   ];
+
+  // Add functional requirements from domain entities
+  if (config.domainEntities && config.domainEntities.length > 0) {
+    config.domainEntities.forEach((entity, idx) => {
+      baseRequirements.push({
+        id: `FR${String(100 + idx + 1)}`,
+        title: `${entity.name} management`,
+        description: `The system must allow managing ${entity.name.toLowerCase()} entities with the following fields: ${entity.fields.map(f => f.name).join(', ')}`,
+        priority: 'high',
+      });
+    });
+  }
+
+  return baseRequirements;
 }
 
 function buildNonFunctionalRequirements(): string[] {

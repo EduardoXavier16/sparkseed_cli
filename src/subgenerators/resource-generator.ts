@@ -436,7 +436,8 @@ export function generateResourceTest(config: ResourceConfig): string {
   const resourceNameCapitalized = resourceName.charAt(0).toUpperCase() + resourceName.slice(1);
 
   if (isTs) {
-    return `import { describe, it, expect, beforeEach, vi } from 'vitest';
+    return `import type { Request, Response, NextFunction } from 'express';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ${resourceNameCapitalized}Controller } from '../../src/controllers/${resourceName}.controller';
 import { ${resourceNameCapitalized}Service } from '../../src/services/${resourceName}.service';
 
@@ -457,9 +458,28 @@ describe('${resourceNameCapitalized}Controller', () => {
     });
     vi.spyOn(${resourceNameCapitalized}Service.prototype, 'update').mockResolvedValue(null);
     vi.spyOn(${resourceNameCapitalized}Service.prototype, 'delete').mockResolvedValue(true);
-    
+
     controller = new ${resourceNameCapitalized}Controller();
   });
+
+  const createMockRequest = (overrides?: Partial<Request>): Request =>
+    ({
+      params: {},
+      body: {},
+      query: {},
+      headers: {},
+      ...overrides,
+    } as unknown as Request);
+
+  const createMockResponse = (overrides?: Partial<Response>): Response =>
+    ({
+      json: vi.fn(),
+      status: vi.fn().mockReturnThis(),
+      send: vi.fn(),
+      ...overrides,
+    } as unknown as Response);
+
+  const createMockNext = (): NextFunction => vi.fn() as unknown as NextFunction;
 
   describe('GET /${resourceName}', () => {
     it('should return all items', async () => {
@@ -469,10 +489,10 @@ describe('${resourceNameCapitalized}Controller', () => {
       ];
       vi.spyOn(${resourceNameCapitalized}Service.prototype, 'findAll').mockResolvedValue(mockItems);
 
-      const mockRes = { json: vi.fn() };
-      const mockNext = vi.fn();
+      const mockRes = createMockResponse();
+      const mockNext = createMockNext();
 
-      await controller.getAll({} as any, mockRes as any, mockNext);
+      await controller.getAll(createMockRequest(), mockRes, mockNext);
 
       expect(mockRes.json).toHaveBeenCalledWith({ data: mockItems });
       expect(mockNext).not.toHaveBeenCalled();
@@ -484,11 +504,11 @@ describe('${resourceNameCapitalized}Controller', () => {
       const mockItem = { id: '1', createdAt: new Date(), updatedAt: new Date() };
       vi.spyOn(${resourceNameCapitalized}Service.prototype, 'findById').mockResolvedValue(mockItem);
 
-      const mockReq = { params: { id: '1' } };
-      const mockRes = { json: vi.fn() };
-      const mockNext = vi.fn();
+      const mockReq = createMockRequest({ params: { id: '1' } });
+      const mockRes = createMockResponse();
+      const mockNext = createMockNext();
 
-      await controller.getById(mockReq as any, mockRes as any, mockNext);
+      await controller.getById(mockReq, mockRes, mockNext);
 
       expect(mockRes.json).toHaveBeenCalledWith({ data: mockItem });
     });
@@ -496,11 +516,11 @@ describe('${resourceNameCapitalized}Controller', () => {
     it('should return 404 when item not found', async () => {
       vi.spyOn(${resourceNameCapitalized}Service.prototype, 'findById').mockResolvedValue(null);
 
-      const mockReq = { params: { id: '999' } };
-      const mockRes = { json: vi.fn() };
-      const mockNext = vi.fn();
+      const mockReq = createMockRequest({ params: { id: '999' } });
+      const mockRes = createMockResponse();
+      const mockNext = createMockNext();
 
-      await controller.getById(mockReq as any, mockRes as any, mockNext);
+      await controller.getById(mockReq, mockRes, mockNext);
 
       expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
     });
@@ -509,11 +529,11 @@ describe('${resourceNameCapitalized}Controller', () => {
   describe('POST /${resourceName}', () => {
     it('should create a new item', async () => {
       const mockData = { name: 'Test' };
-      const mockRes = { status: vi.fn().mockReturnThis(), json: vi.fn() };
-      const mockNext = vi.fn();
-      const mockReq = { body: mockData };
+      const mockRes = createMockResponse();
+      const mockNext = createMockNext();
+      const mockReq = createMockRequest({ body: mockData });
 
-      await controller.create(mockReq as any, mockRes as any, mockNext);
+      await controller.create(mockReq, mockRes, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(201);
       expect(mockRes.json).toHaveBeenCalled();

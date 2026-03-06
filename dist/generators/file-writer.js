@@ -37,10 +37,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.writeProjectToDisk = writeProjectToDisk;
-exports.createDirectoryIfNotExists = createDirectoryIfNotExists;
-exports.fileExists = fileExists;
-exports.readJsonFile = readJsonFile;
-exports.writeJsonFile = writeJsonFile;
 const fs = __importStar(require("fs"));
 const ora_1 = __importDefault(require("ora"));
 const path = __importStar(require("path"));
@@ -61,19 +57,6 @@ const FILE_WRITER_MESSAGES = {
         error: 'Error al crear el proyecto',
     },
 };
-async function writeProjectToDisk(structure, baseDir, prdContent, designSystemContent, language) {
-    const selectedLanguage = language ?? 'en';
-    const messages = FILE_WRITER_MESSAGES[selectedLanguage];
-    const spinner = (0, ora_1.default)(messages.creating).start();
-    try {
-        await writeStructure(structure, baseDir, prdContent, designSystemContent);
-        spinner.succeed(messages.success);
-    }
-    catch (error) {
-        spinner.fail(messages.error);
-        throw error;
-    }
-}
 async function writeStructure(structure, basePath, prdContent, designSystemContent) {
     const currentPath = path.join(basePath, structure.name);
     if (structure.type === 'folder') {
@@ -104,26 +87,17 @@ async function writeStructure(structure, basePath, prdContent, designSystemConte
         }
     }
 }
-function createDirectoryIfNotExists(dirPath) {
-    if (!fs.existsSync(dirPath)) {
-        fs.mkdirSync(dirPath, { recursive: true });
-    }
-}
-function fileExists(filePath) {
-    return fs.existsSync(filePath);
-}
-function readJsonFile(filePath) {
+async function writeProjectToDisk(structure, baseDir, prdContent, designSystemContent, language) {
+    const selectedLanguage = language ?? 'en';
+    const messages = FILE_WRITER_MESSAGES[selectedLanguage];
+    const spinner = (0, ora_1.default)(messages.creating).start();
     try {
-        const content = fs.readFileSync(filePath, 'utf-8');
-        return JSON.parse(content);
+        await writeStructure(structure, baseDir, prdContent, designSystemContent);
+        spinner.succeed(messages.success);
     }
-    catch {
-        return null;
+    catch (error) {
+        spinner.fail(messages.error);
+        throw error;
     }
-}
-function writeJsonFile(filePath, data) {
-    const dir = path.dirname(filePath);
-    createDirectoryIfNotExists(dir);
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
 }
 //# sourceMappingURL=file-writer.js.map

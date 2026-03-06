@@ -15,7 +15,8 @@
     "lint:eslint": "eslint src --ext .ts --report-unused-disable-directives --max-warnings 0",
     "lint:eslint:fix": "eslint src --ext .ts --fix",
     "format": "biome format .",
-    "format:prettier": "prettier --write \"src/**/*.{ts,js,json,md}\""
+    "format:prettier": "prettier --write \"src/**/*.{ts,js,json,md}\"",
+    "dead-code": "ts-prune -p tsconfig.json"
   },
   "keywords": [
     "cli",
@@ -27,20 +28,28 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.10.0",
     "chalk": "^4.1.2",
     "commander": "^11.1.0",
+    "gradient-string": "^2.0.2",
+    "ink": "^4.4.1",
     "inquirer": "^8.2.6",
-    "ora": "^5.4.1"
+    "openai": "^4.20.0",
+    "ora": "^5.4.1",
+    "react": "^18.2.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.8.0",
+    "@types/gradient-string": "^1.1.6",
     "@types/inquirer": "^8.2.10",
-    "@types/node": "^20.10.0",
+    "@types/node": "^25.3.3",
+    "@types/react": "^18.2.0",
     "@typescript-eslint/eslint-plugin": "^8.56.1",
     "@typescript-eslint/parser": "^8.56.1",
     "eslint": "^8.56.0",
     "prettier": "^3.2.0",
     "ts-node": "^10.9.2",
+    "ts-prune": "^0.10.3",
     "typescript": "^5.3.0",
     "vitest": "^4.0.18"
   }

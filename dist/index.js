@@ -39,13 +39,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const chalk_1 = __importDefault(require("chalk"));
 const commander_1 = require("commander");
+const fs = __importStar(require("fs"));
 const ora_1 = __importDefault(require("ora"));
 const path = __importStar(require("path"));
+const ai_1 = require("./ai");
+const plugins_1 = require("./plugins");
 const design_system_generator_1 = require("./generators/design-system/design-system-generator");
 const file_writer_1 = require("./generators/file-writer");
 const prd_generator_1 = require("./generators/prd/prd-generator");
 const builder_1 = require("./generators/project-structure/builder");
 const project_prompts_1 = require("./prompts/project-prompts");
+const component_generator_1 = require("./subgenerators/component-generator");
+const file_writer_2 = require("./subgenerators/file-writer");
+const prompts_1 = require("./subgenerators/prompts");
+const resource_generator_1 = require("./subgenerators/resource-generator");
 const CLI_MESSAGES = {
     en: {
         generatingDocs: '\n⚙️  Generating documents and project structure...\n',
@@ -111,6 +118,39 @@ const CLI_MESSAGES = {
         docsHint: '\n📖 Consulta la documentación en docs/ para más detalles.\n',
     },
 };
+const SHORT_VERSION_FLAG = '-v';
+const SHORT_VERSION_COMMAND = 'v';
+const BUILTIN_VERSION_FLAG = '-V';
+const LONG_VERSION_OPTION = '--version';
+function getCliLanguage() {
+    const envLanguage = process.env.SPARKSEED_CLI_LANG;
+    if (envLanguage === 'pt' || envLanguage === 'es') {
+        return envLanguage;
+    }
+    return 'en';
+}
+function resolveFrontendSrcPath(projectRoot) {
+    const frontendSrcPath = path.join(projectRoot, 'src');
+    if (fs.existsSync(frontendSrcPath)) {
+        return frontendSrcPath;
+    }
+    const monorepoFrontendSrcPath = path.join(projectRoot, 'frontend', 'src');
+    if (fs.existsSync(monorepoFrontendSrcPath)) {
+        return monorepoFrontendSrcPath;
+    }
+    return frontendSrcPath;
+}
+function resolveBackendSrcPath(projectRoot) {
+    const backendSrcPath = path.join(projectRoot, 'src');
+    if (fs.existsSync(backendSrcPath)) {
+        return backendSrcPath;
+    }
+    const monorepoBackendSrcPath = path.join(projectRoot, 'backend', 'src');
+    if (fs.existsSync(monorepoBackendSrcPath)) {
+        return monorepoBackendSrcPath;
+    }
+    return backendSrcPath;
+}
 const program = new commander_1.Command();
 const writeLine = (message) => {
     process.stdout.write(`${message}\n`);
@@ -177,5 +217,176 @@ program
     .action(async () => {
     program.parse(['node', 'sparkseed', 'create']);
 });
-program.parse();
+program
+    .command('generate:component')
+    .description('Generate a new React component in the current project')
+    .action(async () => {
+    const spinner = (0, ora_1.default)('Generating component...').start();
+    try {
+        const language = getCliLanguage();
+        const projectRoot = (0, file_writer_2.getProjectRoot)();
+        const srcDir = resolveFrontendSrcPath(projectRoot);
+        const componentAnswers = await (0, prompts_1.askComponentConfig)(language);
+        const componentConfig = {
+            componentName: componentAnswers.componentName,
+            description: componentAnswers.description,
+            withStyles: componentAnswers.withStyles,
+            withTest: componentAnswers.withTest,
+            projectName: path.basename(projectRoot),
+            language: 'typescript',
+            framework: 'react',
+            styling: 'tailwind',
+        };
+        const componentDir = path.join(srcDir, 'components', componentConfig.componentName);
+        const isTypescript = componentConfig.language === 'typescript';
+        const ext = isTypescript ? 'tsx' : 'jsx';
+        const files = [];
+        files.push({
+            filePath: path.relative(projectRoot, path.join(componentDir, `${componentConfig.componentName}.${ext}`)),
+            content: (0, component_generator_1.generateComponentTemplate)(componentConfig),
+        });
+        if (componentConfig.withStyles) {
+            files.push({
+                filePath: path.relative(projectRoot, path.join(componentDir, `${componentConfig.componentName}.styles.${isTypescript ? 'ts' : 'js'}`)),
+                content: (0, component_generator_1.generateComponentStyles)(componentConfig),
+            });
+        }
+        if (componentConfig.withTest) {
+            files.push({
+                filePath: path.relative(projectRoot, path.join(componentDir, `${componentConfig.componentName}.test.${isTypescript ? 'tsx' : 'jsx'}`)),
+                content: (0, component_generator_1.generateComponentTest)(componentConfig),
+            });
+        }
+        await (0, file_writer_2.writeFilesToDisk)(files, projectRoot);
+        spinner.succeed('Component generated successfully.');
+    }
+    catch (error) {
+        spinner.fail('Failed to generate component.');
+        console.error(error instanceof Error ? error.message : error);
+        process.exit(1);
+    }
+});
+program
+    .command('generate:page')
+    .description('Generate a new page component in the current project')
+    .action(async () => {
+    const spinner = (0, ora_1.default)('Generating page...').start();
+    try {
+        const language = getCliLanguage();
+        const projectRoot = (0, file_writer_2.getProjectRoot)();
+        const srcDir = resolveFrontendSrcPath(projectRoot);
+        const pageAnswers = await (0, prompts_1.askPageConfig)(language);
+        const pageConfig = {
+            pageName: pageAnswers.pageName,
+            description: pageAnswers.description,
+            withTest: pageAnswers.withTest,
+            projectName: path.basename(projectRoot),
+            language: 'typescript',
+            framework: 'react',
+            styling: 'tailwind',
+        };
+        const pagesDir = path.join(srcDir, 'pages');
+        const isTypescript = pageConfig.language === 'typescript';
+        const ext = isTypescript ? 'tsx' : 'jsx';
+        const files = [];
+        files.push({
+            filePath: path.relative(projectRoot, path.join(pagesDir, `${pageConfig.pageName}.${ext}`)),
+            content: (0, component_generator_1.generatePageTemplate)({
+                pageName: pageConfig.pageName,
+                language: pageConfig.language,
+                description: pageConfig.description,
+            }),
+        });
+        if (pageConfig.withTest) {
+            files.push({
+                filePath: path.relative(projectRoot, path.join(pagesDir, `${pageConfig.pageName}.test.${isTypescript ? 'tsx' : 'jsx'}`)),
+                content: (0, component_generator_1.generatePageTest)({
+                    pageName: pageConfig.pageName,
+                    language: pageConfig.language,
+                }),
+            });
+        }
+        await (0, file_writer_2.writeFilesToDisk)(files, projectRoot);
+        spinner.succeed('Page generated successfully.');
+    }
+    catch (error) {
+        spinner.fail('Failed to generate page.');
+        console.error(error instanceof Error ? error.message : error);
+        process.exit(1);
+    }
+});
+program
+    .command('generate:resource')
+    .description('Generate backend resource (controller, service, routes, tests)')
+    .action(async () => {
+    const spinner = (0, ora_1.default)('Generating resource...').start();
+    try {
+        const language = getCliLanguage();
+        const projectRoot = (0, file_writer_2.getProjectRoot)();
+        const srcDir = resolveBackendSrcPath(projectRoot);
+        const resourceAnswers = await (0, prompts_1.askResourceConfig)(language);
+        const resourceConfig = {
+            resourceName: resourceAnswers.resourceName,
+            description: resourceAnswers.description,
+            withController: resourceAnswers.withController,
+            withService: resourceAnswers.withService,
+            withRoutes: resourceAnswers.withRoutes,
+            withTest: resourceAnswers.withTest,
+            projectName: path.basename(projectRoot),
+            language: 'typescript',
+            framework: 'express',
+            styling: 'none',
+        };
+        const controllersDir = path.join(srcDir, 'controllers');
+        const servicesDir = path.join(srcDir, 'services');
+        const routesDir = path.join(srcDir, 'routes');
+        const testsDir = path.join(projectRoot, 'tests', 'resources');
+        const files = [];
+        if (resourceConfig.withController) {
+            files.push({
+                filePath: path.relative(projectRoot, path.join(controllersDir, `${resourceConfig.resourceName}.controller.ts`)),
+                content: (0, resource_generator_1.generateController)(resourceConfig),
+            });
+        }
+        if (resourceConfig.withService) {
+            files.push({
+                filePath: path.relative(projectRoot, path.join(servicesDir, `${resourceConfig.resourceName}.service.ts`)),
+                content: (0, resource_generator_1.generateService)(resourceConfig),
+            });
+        }
+        if (resourceConfig.withRoutes) {
+            files.push({
+                filePath: path.relative(projectRoot, path.join(routesDir, `${resourceConfig.resourceName}.routes.ts`)),
+                content: (0, resource_generator_1.generateRoutes)(resourceConfig),
+            });
+        }
+        if (resourceConfig.withTest) {
+            files.push({
+                filePath: path.relative(projectRoot, path.join(testsDir, `${resourceConfig.resourceName}.controller.test.ts`)),
+                content: (0, resource_generator_1.generateResourceTest)(resourceConfig),
+            });
+        }
+        await (0, file_writer_2.writeFilesToDisk)(files, projectRoot);
+        spinner.succeed('Resource generated successfully.');
+    }
+    catch (error) {
+        spinner.fail('Failed to generate resource.');
+        console.error(error instanceof Error ? error.message : error);
+        process.exit(1);
+    }
+});
+// Register AI commands
+(0, ai_1.registerAiCommands)(program);
+// Register Plugin commands
+(0, plugins_1.registerPluginCommands)(program);
+const normalizedArgs = process.argv.map((arg) => {
+    if (arg === SHORT_VERSION_FLAG) {
+        return BUILTIN_VERSION_FLAG;
+    }
+    if (arg === SHORT_VERSION_COMMAND) {
+        return LONG_VERSION_OPTION;
+    }
+    return arg;
+});
+program.parse(normalizedArgs);
 //# sourceMappingURL=index.js.map

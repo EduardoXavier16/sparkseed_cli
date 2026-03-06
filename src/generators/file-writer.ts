@@ -28,26 +28,6 @@ const FILE_WRITER_MESSAGES: Record<SupportedLanguage, IFileWriterMessages> = {
   },
 };
 
-export async function writeProjectToDisk(
-  structure: ProjectStructure,
-  baseDir: string,
-  prdContent?: string,
-  designSystemContent?: string,
-  language?: SupportedLanguage
-): Promise<void> {
-  const selectedLanguage: SupportedLanguage = language ?? 'en';
-  const messages = FILE_WRITER_MESSAGES[selectedLanguage];
-  const spinner = ora(messages.creating).start();
-
-  try {
-    await writeStructure(structure, baseDir, prdContent, designSystemContent);
-    spinner.succeed(messages.success);
-  } catch (error) {
-    spinner.fail(messages.error);
-    throw error;
-  }
-}
-
 async function writeStructure(
   structure: ProjectStructure,
   basePath: string,
@@ -82,27 +62,22 @@ async function writeStructure(
   }
 }
 
-export function createDirectoryIfNotExists(dirPath: string): void {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-}
+export async function writeProjectToDisk(
+  structure: ProjectStructure,
+  baseDir: string,
+  prdContent?: string,
+  designSystemContent?: string,
+  language?: SupportedLanguage
+): Promise<void> {
+  const selectedLanguage: SupportedLanguage = language ?? 'en';
+  const messages = FILE_WRITER_MESSAGES[selectedLanguage];
+  const spinner = ora(messages.creating).start();
 
-export function fileExists(filePath: string): boolean {
-  return fs.existsSync(filePath);
-}
-
-export function readJsonFile<T>(filePath: string): T | null {
   try {
-    const content = fs.readFileSync(filePath, 'utf-8');
-    return JSON.parse(content) as T;
-  } catch {
-    return null;
+    await writeStructure(structure, baseDir, prdContent, designSystemContent);
+    spinner.succeed(messages.success);
+  } catch (error) {
+    spinner.fail(messages.error);
+    throw error;
   }
-}
-
-export function writeJsonFile<T>(filePath: string, data: T): void {
-  const dir = path.dirname(filePath);
-  createDirectoryIfNotExists(dir);
-  fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
 }
