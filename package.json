@@ -16,7 +16,8 @@
     "lint:eslint:fix": "eslint src --ext .ts --fix",
     "format": "biome format .",
     "format:prettier": "prettier --write \"src/**/*.{ts,js,json,md}\"",
-    "dead-code": "ts-prune -p tsconfig.json"
+    "dead-code": "ts-prune -p tsconfig.json",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "cli",
@@ -25,8 +26,25 @@
     "prd",
     "design-system"
   ],
-  "author": "",
+  "author": "Eduardo Xavier (https://github.com/EduardoXavier16)",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EduardoXavier16/sparkseed_cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/EduardoXavier16/sparkseed_cli/issues"
+  },
+  "homepage": "https://github.com/EduardoXavier16/sparkseed_cli#readme",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NPM_PUBLISH_GUIDE.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.10.0",
     "chalk": "^4.1.2",

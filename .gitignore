@@ -27,3 +27,4 @@ coverage
 
 # Biome cache
 .biome
+node_modules/
